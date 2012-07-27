@@ -1,0 +1,22 @@
+
+
+# See http://www.bobotig.fr/contenu/documents/guide-pombo
+# for more informations.
+
+
+*** All
+	- A distant server where to put encrypted files
+
+*** Windows
+	- GnuPG4Win
+
+*** GNU/Linux
+	- python
+	- GnuPG
+	- iw
+	- traceroute
+	- imagemagick
+	- streamer
+	- pngnq
+	All of these tools should be into your repositories:
+		Debian based: aptitude install python gnupg net-tools iw traceroute imagemagick streamer pngnq
