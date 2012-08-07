@@ -27,11 +27,11 @@
 # 
 #	 3. This notice may not be removed or altered from any source distribution.
 
-PROGRAMNAME	= 'Pombo'
-PROGRAMVERSION = '0.0.9'
+PROGRAMNAME = 'Pombo'
+PROGRAMVERSION = '0.1.0'
 
 import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
-		random,re,subprocess,sys,tempfile,time,urllib,urllib2,zipfile
+       random,re,subprocess,sys,tempfile,time,urllib,urllib2,zipfile
 
 
 # ----------------------------------------------------------------------
@@ -39,14 +39,14 @@ import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
 # ----------------------------------------------------------------------
 
 # Current running OS specifities
-OS	 = 'GNULINUX'
-SEP	= '/'
+OS     = 'GNULINUX'
+SEP    = '/'
 CONF   = '/etc/pombo.conf'
 IPFILE = '/var/local/pombo'
 if os.name == 'nt':
 	os.chdir(sys.path[0])
-	OS	 = 'WINDOWS'
-	SEP	= '\\'
+	OS     = 'WINDOWS'
+	SEP    = '\\'
 	CONF   = 'pombo.conf'
 	IPFILE = 'pombo'
 
@@ -62,7 +62,7 @@ if 'check' in sys.argv:
 
 # Get the configuration options
 if not os.access(CONF, os.R_OK):
-	print ' ! Impossible de lire le fichier de configuration.'
+	print ' ! Impossible to read the config file.'
 	sys.exit(1)
 config = ConfigParser.SafeConfigParser()
 config.read(CONF)
@@ -77,13 +77,13 @@ if ONLYONIPCHANGE != 'True' and ONLYONIPCHANGE != 'False':
 	ONLYONIPCHANGE = 'False'
 CHECKFILE = config.get('GENERAL','checkfile').strip()
 # Additional tools
-NETWORK_CONFIG	 = config.get(OS,'network_config').strip()
+NETWORK_CONFIG     = config.get(OS,'network_config').strip()
 WIFI_ACCESS_POINTS = config.get(OS,'wifi_access_points').strip()
-TRACEROUTE		 = config.get(OS,'traceroute').strip()
-NETWORK_TRAFIC	 = config.get(OS,'network_trafic').strip()
-SCREENSHOT		 = config.get(OS,'screenshot').strip()
-CAMSHOT			= config.get(OS,'camshot').strip()
-RECOMPRESSION	  = config.get(OS,'recompression').strip()
+TRACEROUTE         = config.get(OS,'traceroute').strip()
+NETWORK_TRAFIC     = config.get(OS,'network_trafic').strip()
+SCREENSHOT         = config.get(OS,'screenshot').strip()
+CAMSHOT            = config.get(OS,'camshot').strip()
+RECOMPRESSION      = config.get(OS,'recompression').strip()
 if OS == 'GNULINUX':
 	CAMSHOT_FILETYPE = config.get(OS,'camshot_filetype').strip()
 if SERVERURL == '':
@@ -108,18 +108,18 @@ def current_network_connections():
 		return 'Disabled.'
 	return runprocess(NETWORK_TRAFIC.split(' '))
 
-#def currentuser():
-#	''' Return the user who is currently logged in and uses the X 
-#	    session. None if could not be determined.
-#	'''
-#	user = None
-#	if OS == 'WINDOWS':
-#		user = runprocess(['echo', '%USERNAME%'], useshell = True)
-#	else:
-#		for line in runprocess(['who','-s']).split('\n'):
-#			if '(:0)' in line:
-#				user = line.split(' ')[0]
-#	return user
+def currentuser():
+	''' Return the user who is currently logged in and uses the X 
+	    session. None if could not be determined.
+	'''
+	user = None
+	if OS == 'WINDOWS':
+		user = runprocess(['echo', '%USERNAME%'], useshell = True)
+	else:
+		for line in runprocess(['who','-s']).split('\n'):
+			if '(:0)' in line:
+				user = line.split(' ')[0]
+	return user
 
 def ip_hash(ip):
 	''' IP hash methods - could be easily modifed. '''
@@ -153,7 +153,7 @@ def png_recompression(filepath, what):
 
 def _print(string):
 	if DEBUG:
-		print string
+		print('%s %s' % (datetime.datetime.now(), string))
 	return
 
 def public_ip():
@@ -318,7 +318,7 @@ def snapshot(stolen, public_ip):
 	# Send to the webserver (HTTP POST).
 	for distant in SERVERURL.split(','):
 		domain = distant.split('/')[2]
-		_print(' - Sending %s to %s ...' % (gpgfilename, domain))
+		_print(' - Sending to %s ...' % (domain))
 		parameters = {'filename':gpgfilename, 'filedata':filedata, 'token':authtoken}
 		request = urllib2.Request(distant, urllib.urlencode(parameters))
 		try:
@@ -326,7 +326,7 @@ def snapshot(stolen, public_ip):
 			page = response.read(2000)
 			_print('	 + Server responded: %s' % page.strip())
 		except Exception as ex:
-			_print('	 ! Failed to send to server because: %s' % ex)
+			_print('	 ! Failed to send to server: %s' % ex)
 			if DEBUG:
 				return
 			else:
