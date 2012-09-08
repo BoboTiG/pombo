@@ -89,6 +89,13 @@ class Device:
         """
         self.dev.setresolution(width, height)
 
+    def getDisplayName(self):
+        """ Gets the Windows "friendly name" for the device (for example "Microsoft LifeCam VX-1000")
+
+        (contributed by Jeremy Mortis (mortis@tansay.ca)
+        """
+        return self.dev.getdisplayname()
+
     def getBuffer(self):
         """Returns a string containing the raw pixel data.
 
@@ -194,16 +201,17 @@ class Device:
 
 if __name__ == '__main__':
     import shutil
-    shutil.copy('VideoCapture.py', 'C:\Python20\Lib')
-    shutil.copy('VideoCapture.py', 'C:\Python21\Lib')
-    shutil.copy('VideoCapture.py', 'C:\Python22\Lib')
-    shutil.copy('VideoCapture.py', 'C:\Python23\Lib')
-    shutil.copy('VideoCapture.py', 'C:\Python24\Lib')
-    shutil.copy('VideoCapture.py', 'C:\Python25\Lib')
-    #~ cam = Device(devnum=0)
+    #shutil.copy('VideoCapture.py', 'C:\Python20\Lib')
+    #shutil.copy('VideoCapture.py', 'C:\Python21\Lib')
+    #shutil.copy('VideoCapture.py', 'C:\Python22\Lib')
+    #shutil.copy('VideoCapture.py', 'C:\Python23\Lib')
+    #shutil.copy('VideoCapture.py', 'C:\Python24\Lib')
+    #shutil.copy('VideoCapture.py', 'C:\Python25\Lib')
+    cam = Device(devnum=0)
     #~ #cam.displayPropertyPage() ## deprecated
     #~ #cam.displayCaptureFilterProperties()
     #~ #cam.displayCapturePinProperties()
     #~ #cam.setResolution(768, 576) ## PAL
     #~ #cam.setResolution(352, 288) ## CIF
     #~ cam.saveSnapshot('test.jpg', quality=75, timestamp=3, boldfont=1)
+    print "Friendly name: ", cam.getDisplayName()

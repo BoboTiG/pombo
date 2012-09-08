@@ -8,7 +8,7 @@
 	- A distant server where to put encrypted files
 
 *** Windows
-	- GnuPG4Win
+	- GnuPG4Win (or GnuPT)
 
 *** GNU/Linux
 	- python
@@ -17,6 +17,5 @@
 	- traceroute
 	- imagemagick
 	- streamer
-	- pngnq
 	All of these tools should be into your repositories:
-		Debian based: aptitude install python gnupg net-tools iw traceroute imagemagick streamer pngnq
+		Debian based: aptitude install python gnupg net-tools iw traceroute imagemagick streamer

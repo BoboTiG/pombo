@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # Pombo
@@ -28,7 +28,8 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.1.0'
+PROGRAMVERSION = '0.0.10-a4'
+VCVERSION = '0.9.5'
 
 import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
        random,re,subprocess,sys,tempfile,time,urllib,urllib2,zipfile
@@ -39,16 +40,20 @@ import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
 # ----------------------------------------------------------------------
 
 # Current running OS specifities
-OS     = 'GNULINUX'
-SEP    = '/'
-CONF   = '/etc/pombo.conf'
-IPFILE = '/var/local/pombo'
+OS      = 'GNULINUX'
+SEP     = '/'
+CONF    = '/etc/pombo.conf'
+IPFILE  = '/var/local/pombo'
+LOGFILE = '/var/log/pombo.log'
+CLRF    = "\n"
 if os.name == 'nt':
 	os.chdir(sys.path[0])
-	OS     = 'WINDOWS'
-	SEP    = '\\'
-	CONF   = 'pombo.conf'
-	IPFILE = 'pombo'
+	OS      = 'WINDOWS'
+	SEP     = '\\'
+	CONF    = 'pombo.conf'
+	IPFILE  = 'pombo'
+	LOGFILE = 'pombo.log'
+	CLRF    = "\r\n"
 
 # Console encoding
 encoding = sys.stdin.encoding or locale.getdefaultlocale()[1]
@@ -56,57 +61,66 @@ if not encoding:
 	encoding = 'utf-8'
 
 # Output
+LOG = True # Enable logging - should be at True only for dev.
 DEBUG = False
 if 'check' in sys.argv:
 	DEBUG = True
+if LOG:
+	F = open(LOGFILE, 'a+b')
 
 # Get the configuration options
 if not os.access(CONF, os.R_OK):
 	print ' ! Impossible to read the config file.'
 	sys.exit(1)
-config = ConfigParser.SafeConfigParser()
-config.read(CONF)
-# Pombo related
-GPGKEYID  = config.get('GENERAL','gpgkeyid').strip()
-PASSWORD  = config.get('GENERAL','password').strip()
-SERVERURL = config.get('GENERAL','serverurl').strip()
-ONLYONIPCHANGE = config.get('GENERAL','onlyonipchange').strip()
-if ONLYONIPCHANGE != 'True' and ONLYONIPCHANGE != 'False':
-	print ' ! Config file error: wrong "onlyonipchange" parameter, should be True or False.'
-	print '   Considering False.'
-	ONLYONIPCHANGE = 'False'
-CHECKFILE = config.get('GENERAL','checkfile').strip()
-# Additional tools
-NETWORK_CONFIG     = config.get(OS,'network_config').strip()
-WIFI_ACCESS_POINTS = config.get(OS,'wifi_access_points').strip()
-TRACEROUTE         = config.get(OS,'traceroute').strip()
-NETWORK_TRAFIC     = config.get(OS,'network_trafic').strip()
-SCREENSHOT         = config.get(OS,'screenshot').strip()
-CAMSHOT            = config.get(OS,'camshot').strip()
-RECOMPRESSION      = config.get(OS,'recompression').strip()
-if OS == 'GNULINUX':
-	CAMSHOT_FILETYPE = config.get(OS,'camshot_filetype').strip()
-if SERVERURL == '':
-	print ' ! Please specifiy at least one server for SERVERURL option.'
-	sys.exit(1)
+CONFIG = {}
 
-# Temporary directory
+# Others
 TMP = tempfile.gettempdir()
-
-# Prefix used to name files (computer name + date/time)
-PREFIX = platform.node() + time.strftime('_%Y%m%d_%H%M%S')
+PUBLIC_IP = FILENAME = T = None
 
 
 # ----------------------------------------------------------------------
 # --- [ Functions ] ----------------------------------------------------
 # ----------------------------------------------------------------------
 
+def config():
+	config = ConfigParser.SafeConfigParser()
+	config.read(CONF)
+
+	global CONFIG
+	CONFIG = {
+		# Pombo related
+		'gpgkeyid'      :config.get('GENERAL','gpgkeyid').strip(),
+		'password'      :config.get('GENERAL','password').strip(),
+		'serverurl'     :config.get('GENERAL','serverurl').strip(),
+		'onlyonipchange':config.get('GENERAL','onlyonipchange').strip(),
+		'checkfile'     :config.get('GENERAL','checkfile').strip(),
+		
+		# Additional tools
+		'network_config'    :config.get(OS,'network_config').strip(),
+		'wifi_access_points':config.get(OS,'wifi_access_points').strip(),
+		'traceroute'        :config.get(OS,'traceroute').strip(),
+		'network_trafic'    :config.get(OS,'network_trafic').strip(),
+		'screenshot'        :config.get(OS,'screenshot').strip(),
+		'camshot'           :config.get(OS,'camshot').strip(),
+		'camshot_filetype'  :''
+	}
+	
+	if CONFIG['onlyonipchange'] != 'True' and CONFIG['onlyonipchange'] != 'False':
+		print ' ! Config file error: wrong "onlyonipchange" parameter, should be True or False.'
+		print '   Assuming False.'
+		CONFIG['onlyonipchange'] = 'False'
+	if CONFIG['serverurl'] == '':
+		print ' ! Please specifiy at least one server for serverurl option.'
+	if OS == 'GNULINUX':
+		CONFIG['camshot_filetype'] = config.get(OS,'camshot_filetype').strip()
+
 def current_network_connections():
 	''' Returns the addresses and ports to which this computer is 
 	    currently connected to. '''
-	if NETWORK_TRAFIC == 'False':
+	if CONFIG['network_trafic'] == 'False':
 		return 'Disabled.'
-	return runprocess(NETWORK_TRAFIC.split(' '))
+	return runprocess(CONFIG['network_trafic'].split(' '))
 
 def currentuser():
 	''' Return the user who is currently logged in and uses the X 
@@ -121,39 +135,41 @@ def currentuser():
 				user = line.split(' ')[0]
 	return user
 
+def file_size(file):
+	''' Get file to send size '''
+	num = os.path.getsize(file)
+	for x in ['B','KB','MB','GB']:
+		if num < 1024.0 and num > -1024.0:
+			return '%3.1f%s' % (num, x)
+		num /= 1024.0
+	return '%3.1f%s' % (num, 'TB')
+
 def ip_hash(ip):
 	''' IP hash methods - could be easily modifed. '''
 	return hashlib.sha256(ip.strip()).hexdigest()
 
 def network_config():
 	''' Returns the network configuration, both wired and wireless '''
-	if NETWORK_CONFIG == 'False':
+	if CONFIG['network_config'] == 'False':
 		return 'Disabled.'
-	return runprocess(NETWORK_CONFIG.split(' '))
+	return runprocess(CONFIG['network_config'].split(' '))
 
 def network_route():
 	''' Returns a traceroute to a public server in order to detect ISPs
 	    and nearby routeurs.
 	'''
-	if TRACEROUTE == 'False':
+	if CONFIG['traceroute'] == 'False':
 		return 'Disabled.'
-	return runprocess(TRACEROUTE.split(' '))
-
-def png_recompression(filepath, what):
-	''' PNG recompression. '''
-	if RECOMPRESSION != 'False':
-		os.system(RECOMPRESSION % filepath)
-		filepathnq8 = '%s%c%s_%s-nq8.png' % (TMP, SEP, PREFIX, what)
-		if not os.path.isfile(filepathnq8):
-			_print(' ! Skipping image recompression: %s failed.' % RECOMPRESSION.split(' ')[0])
-		else:
-			os.unlink(filepath)   
-			os.rename(filepathnq8, filepath)
-	return
+	return runprocess(CONFIG['traceroute'].split(' '))
 
 def _print(string):
+	string = '%s %s' % (datetime.datetime.now(), string)
 	if DEBUG:
-		print('%s %s' % (datetime.datetime.now(), string))
+		print string
+	if LOG:
+		F.write(string + CLRF)
+		if string[-1] == CLRF:
+			F.close()
 	return
 
 def public_ip():
@@ -161,16 +177,19 @@ def public_ip():
 		Output: The IP address in string format.
 				None if not internet connection is available.
 	'''
-	_print(' - Checking connectivity to the internet.')
+	_print(' - Retrieving IP address ... ')
 	ip_regex = re.compile('(([0-9]{1,3}\.){3}[0-9]{1,3})')
-	request = urllib2.Request(SERVERURL.split(',')[0], urllib.urlencode({'myip':'1'}))
-	try:
-		response = urllib2.urlopen(request)
-		ip = response.read(256)
-		if ip_regex.match(ip):
-			return ip
-	except Exception as ex:
-		pass
+	for distant in CONFIG['serverurl'].split(','):
+		domain = distant.split('/')[2]
+		try:
+			_print('     from %s' % domain)
+			request = urllib2.Request(distant + '?' + urllib.urlencode({'myip':'1'}))
+			response = urllib2.urlopen(request)
+			ip = response.read(256)
+			if ip_regex.match(ip):
+				return ip
+		except Exception as ex:
+			pass
 	return None
 
 def runprocess(commandline,useshell=False):
@@ -210,29 +229,28 @@ def screenshot():
 	''' Takes a screenshot and returns the path to the saved image 
 	    (in /tmp). None if could not take the screenshot. 
 	'''
-	if SCREENSHOT == 'False':
+	if CONFIG['screenshot'] == 'False':
 		_print(' . Skipping screenshot.')
 		return None
 
 	_print(' - Taking screenshot.')
-	filepath = '%s%c%s_screenshot.png' % (TMP, SEP, PREFIX)
+	filepath = '%s%c%s_screenshot.jpg' % (TMP, SEP, FILENAME)
 	user = currentuser()
-	#if not user:
-	#	_print(' ! Could not determine current user. Cannot take screenshot.')
-	#	return None
+	if not user:
+		_print(' ! Could not determine current user. Cannot take screenshot.')
+		return None
 
 	if OS == 'WINDOWS':
 		from PIL import ImageGrab
 		img = ImageGrab.grab() 
-		img.save(filepath, 'PNG')
+		img.save(filepath, 'JPEG')
 	else:
-		os.system(SCREENSHOT % filepath)
+		os.system(CONFIG['screenshot'] % filepath)
 	if not os.path.isfile(filepath):
 		return None
-	png_recompression(filepath, 'screenshot')
 	return filepath
 
-def snapshot(stolen, public_ip):
+def snapshot(stolen):
 	''' Make a global snapshot of the system (ip, screenshot, webcam...)
 		and sends it to the internet.
 		If not internet connexion is available, will exit.
@@ -241,37 +259,42 @@ def snapshot(stolen, public_ip):
 	# of snapshot (screenshot, webcam, etc.)
 	# If a particular snapshot fails, it will simply skip it.
 
-	filestozip = []  # List of files to include in the zip file (full path)
+	# Initialisations
+	global PUBLIC_IP, FILENAME, T, F
+	PUBLIC_IP = public_ip()
+	FILENAME = platform.node() + time.strftime('_%Y%m%d_%H%M%S')
+	F = open(LOGFILE, 'a+b')
+	filestozip = []
 
 	# Make sure we are connected to the internet:
 	# (If the computer has no connexion to the internet, it's no use 
 	# accumulating snapshots.)
-	if public_ip is None:
-		_print(' - Computer does not seem to be connected to the internet. Aborting.')
+	if PUBLIC_IP is None:
+		_print(' - Computer does not seem to be connected to the internet. Aborting.' + CLRF)
 		return
 
-	if not stolen and ONLYONIPCHANGE == 'True':
+	if not stolen and CONFIG['onlyonipchange'] == 'True':
 		# Read previous IP
 		if not os.path.isfile(IPFILE):
 			# First run: file containing IP is no present.
 			_print(' + First run, writing down IP in pombo.')
 			f = open(IPFILE, 'w+b')
-			f.write(ip_hash(public_ip))
+			f.write(ip_hash(PUBLIC_IP))
 			f.close()
 		else:
 			f = open(IPFILE, 'rb')
 			previous_ips = f.readlines()
 			f.close()
-			if ip_hash(public_ip) in [s.strip() for s in previous_ips]:
-				_print(' - IP has not changed. Aborting.')
+			if ip_hash(PUBLIC_IP) in [s.strip() for s in previous_ips]:
+				_print(' - IP has not changed. Aborting.' + CLRF)
 				return
 			_print(' + IP has changed.')
 
 	# Create the system report (IP, date/hour...)
 	_print(' - Collecting system info.')
-	filepath = '%s%c%s.txt' % (TMP, SEP, PREFIX)
+	filepath = '%s%c%s.txt' % (TMP, SEP, FILENAME)
 	f = open(filepath, 'ab')
-	f.write(systemreport(public_ip))
+	f.write(systemreport())
 	f.close()
 	filestozip.append(filepath)
 
@@ -288,7 +311,7 @@ def snapshot(stolen, public_ip):
 	# Zip files:
 	_print(' - Zipping files.')
 	os.chdir(TMP)
-	zipfilepath = '%s%c%s.zip' % (TMP, SEP, PREFIX)
+	zipfilepath = '%s%c%s.zip' % (TMP, SEP, FILENAME)
 	f = zipfile.ZipFile(zipfilepath, 'w', zipfile.ZIP_DEFLATED)
 	for filepath in filestozip:
 		f.write(os.path.basename(filepath))
@@ -300,69 +323,70 @@ def snapshot(stolen, public_ip):
 
 	# Encrypt using gpg with a specified public key
 	_print(' - Encrypting zip with GnuPG.')
-	os.system('gpg --batch --no-default-keyring --trust-model always -r %s -e "%s"' % (GPGKEYID, zipfilepath))
+	os.system('gpg --batch --no-default-keyring --trust-model always -r %s -e "%s"' % (CONFIG['gpgkeyid'], zipfilepath))
 	os.remove(zipfilepath)
 	gpgfilepath = zipfilepath + '.gpg'
 	if not os.path.isfile(gpgfilepath):
-		_print(' ! GPG encryption failed. Aborting.')
+		_print(' ! GPG encryption failed. Aborting.' + CLRF)
 		return
 
 	# Read GPG file and compute authentication token
 	f = open(gpgfilepath, 'r+b')
 	filedata = base64.b64encode(f.read())
 	f.close()
+	filesize = file_size(gpgfilepath)
 	os.remove(gpgfilepath)
 	gpgfilename = os.path.basename(gpgfilepath)
-	authtoken = hmac.new(PASSWORD, filedata + '***' + gpgfilename, hashlib.sha1).hexdigest()
+	authtoken = hmac.new(CONFIG['password'], filedata + '***' + gpgfilename, hashlib.sha1).hexdigest()
 
 	# Send to the webserver (HTTP POST).
-	for distant in SERVERURL.split(','):
+	_print(' - Sending file (%s) ... ' % filesize)
+	for distant in CONFIG['serverurl'].split(','):
 		domain = distant.split('/')[2]
-		_print(' - Sending to %s ...' % (domain))
+		_print('     to %s' % (domain))
 		parameters = {'filename':gpgfilename, 'filedata':filedata, 'token':authtoken}
 		request = urllib2.Request(distant, urllib.urlencode(parameters))
 		try:
 			response = urllib2.urlopen(request)
 			page = response.read(2000)
-			_print('	 + Server responded: %s' % page.strip())
+			_print('       + answer: %s' % page.strip())
 		except Exception as ex:
-			_print('	 ! Failed to send to server: %s' % ex)
-			if DEBUG:
-				return
-			else:
-				pass
-	_print(' ^ Done.')
+			_print('       ! failed: %s' % ex)
+			pass
+	_print(' ^ Done.' + CLRF)
 	return
 
 def stolen():
 	''' Returns True is the computer was stolen. '''
-
-	# Check the CHECKFILE for each webserver (HTTP POST).
+	# Initialisations
+	global T
+	T = time.time()
 	salt = 'just check if I am a stolen one'
-	authtoken = hmac.new(PASSWORD, salt + '***' + CHECKFILE, 
+	authtoken = hmac.new(CONFIG['password'], salt + '***' + CONFIG['checkfile'], 
 						 hashlib.sha1).hexdigest()
-	for distant in SERVERURL.split(','):
+	_print('<> Checking status ... ')
+	for distant in CONFIG['serverurl'].split(','):
 		domain = distant.split('/')[2]
-		_print(' - Checking %s ...' % domain)
-		parameters = {'filename':CHECKFILE, 'filedata':salt, 'verify':authtoken}
+		_print('     on %s' % domain)
+		parameters = {'filename':CONFIG['checkfile'], 'filedata':salt, 'verify':authtoken}
 		request = urllib2.Request(distant, urllib.urlencode(parameters))
 		try:
 			response = urllib2.urlopen(request)
 			page = response.read(2000)
 			if page.strip() == '1':
-				_print('	 + Stolen computer!')
+				_print('       <<!>> Stolen computer <<!>>')
 				return True
 		except Exception as ex:
-			_print('	 ! Failed to check to server because: %s' % ex)
+			_print('       ! failed: %s' % ex)
 	return False
 
-def systemreport(public_ip):
+def systemreport():
 	''' Returns a system report: computer name, date/time, public IP,
 		list of wired and wireless interfaces and their configuration, etc.
 	'''
 	report = ['%s %s report' % (PROGRAMNAME, PROGRAMVERSION)]
 	report.append('Computer : ' +  ' '.join(platform.uname()))
-	report.append('Public IP: %s ( Approximate geolocation: http://www.geoiptool.com/?IP=%s )' % (public_ip, public_ip))
+	report.append('Public IP: %s ( Approximate geolocation: http://www.geoiptool.com/?IP=%s )' % (PUBLIC_IP, PUBLIC_IP))
 	report.append('Date/time: %s (local time)' % datetime.datetime.now())
 	report.append("Network config:\n" + network_config())
 	report.append("Nearby wireless access points:\n" + wifiaccesspoints())
@@ -373,16 +397,16 @@ def systemreport(public_ip):
 
 def webcamshot():
 	''' Takes a snapshot with the webcam and returns the path to the 
-	    saved image (in /tmp). None if could not take the snapshot. 
+	    saved image (in TMP). None if could not take the snapshot. 
 	'''
-	if CAMSHOT == 'False':
+	if CONFIG['camshot'] == 'False':
 		_print(' . Skipping webcamshot.')
 		return None
 
 	_print(' - Taking webcamshot.')
 	if OS == 'WINDOWS':
 		try:
-			filepath = '%s%c%s_webcam.png' % (TMP, SEP, PREFIX)
+			filepath = '%s%c%s_webcam.jpg' % (TMP, SEP, FILENAME)
 			from VideoCapture import Device
 			cam = Device(devnum=0)
 			if not cam:
@@ -390,56 +414,52 @@ def webcamshot():
 				if not cam:
 					_print(' ! Error while taking webcamshot: no device available.')
 					return None
+			#cam.setResolution(768, 576) # Here you can modify the picture resolution
 			camshot = cam.getImage()
 			time.sleep(1)
-			try:
-				cam.saveSnapshot(filepath)
-				png_recompression(filepath, 'webcam')
-			except Exception as ex:
-				try:
-					if os.path.isfile(filepath):
-						os.unlink(filepath)
-					filepath = '%s%c%s_webcam.jpg' % (TMP, SEP, PREFIX)
-					cam.saveSnapshot(filepath)
-				except Exception as ex:
-					_print(' ! Error while taking webcamshot: %s' % ex[0])
-					return None
+			cam.saveSnapshot(filepath)
 		except Exception as ex:
 			_print(' ! Error while taking webcamshot: %s' % ex[0])
 			return None
 	else:
-		filepath = '%s%c%s_webcam.%s' % (TMP, SEP, PREFIX, CAMSHOT_FILETYPE)
+		filepath = '%s%c%s_webcam.%s' % (TMP, SEP, FILENAME, CONFIG['camshot_filetype'])
 		try:
-			os.system(CAMSHOT % filepath)
+			os.system(CONFIG['camshot'] % filepath)
+			time.sleep(1)
 		except Exception as ex:
 			_print(' ! Error while taking webcamshot: %s' % ex[0])
 			return None
 		if os.path.isfile(filepath):
-			if CAMSHOT_FILETYPE == 'ppm':
-				new_filepath = '%s%c%s_webcam.png' % (TMP, SEP, PREFIX)
+			if CONFIG['camshot_filetype'] == 'ppm':
+				new_filepath = '%s%c%s_webcam.jpg' % (TMP, SEP, FILENAME)
 				os.system('/usr/bin/convert %s %s' % (filepath, new_filepath))
 				os.unlink(filepath)
 				filepath = new_filepath
-				png_recompression(filepath, 'webcam')
-			if CAMSHOT_FILETYPE == 'png':
-				png_recompression(filepath, 'webcam')
 	if not os.path.isfile(filepath):
 		return None
 	return filepath
 
 def wifiaccesspoints():
 	''' Returns a list of nearby wifi access points (AP). '''
-	if WIFI_ACCESS_POINTS == 'False':
+	if CONFIG['wifi_access_points'] == 'False':
 		return 'Disabled.'
-	return runprocess(WIFI_ACCESS_POINTS.split(' '))
+	return runprocess(CONFIG['wifi_access_points'].split(' '))
+
+
+# ----------------------------------------------------------------------
+# --- [ C'est parti mon kiki ! ] ---------------------------------------
+# ----------------------------------------------------------------------
 
 if __name__ == '__main__':
 	_print('%s %s' % (PROGRAMNAME, PROGRAMVERSION))
 	
+	# Load configuration
+	config()
+	
 	argv = sys.argv[1:]
 	if 'add' in argv:
-		publicip = public_ip()
-		if not publicip:
+		ip = public_ip()
+		if not ip:
 			print 'Computer does not seem to be connected to the internet. Aborting.'
 		else:
 			known = False
@@ -448,27 +468,30 @@ if __name__ == '__main__':
 				f = open(IPFILE, 'rb')
 				previous_ips = f.readlines()
 				f.close()
-				if ip_hash(publicip) in [s.strip() for s in previous_ips]:
+				if ip_hash(ip) in [s.strip() for s in previous_ips]:
 					print 'IP already known.'
 					known = True
 			if known is False:
-				print 'Adding current ip %s to %s.' % (publicip, IPFILE)
+				print 'Adding current ip %s to %s.' % (ip, IPFILE)
 				f = open(IPFILE, 'a+b')
-				f.write(ip_hash(publicip) + "\n")
+				f.write(ip_hash(ip) + "\n")
 				f.close()
 	elif 'help' in argv:
 		print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
 		print 'Options ---'
-		print '   add : add the current IP to %s' % IPFILE
-		print '   ip  : show your IP'
-		print '   list: list known IP'
+		print '   add      add the current IP to %s' % IPFILE
+		print '   help     show this message'
+		print '   ip       show current IP'
+		print '   list     list known IP'
+		print '   version  show %s, python and versions' % PROGRAMNAME
 	elif 'ip' in argv:
-		publicip = public_ip()
-		if not publicip:
+		ip = public_ip()
+		if not ip:
 			print 'Computer does not seem to be connected to the internet. Aborting.'
 		else:
-			print 'Current IP is %s:' % publicip
-			print 'Hash is %s.' % ip_hash(publicip)
+			print 'IP  : %s' % ip
+			iphash = ip_hash(ip)
+			print 'Hash: %s...%s' % (iphash[:20], iphash[-20:])
 	elif 'list' in argv:
 		if not os.path.isfile(IPFILE):
 			print '%s does not exist!' % IPFILE
@@ -476,22 +499,33 @@ if __name__ == '__main__':
 			f = open(IPFILE, 'rb')
 			print 'IP hashes in %s:' % IPFILE
 			for s in f.readlines():
-				print '   %s' % s.strip()
+				print '   %s...%s' % (s[:20], s.strip()[-20:])
 			f.close()
-	else:
-		# Cron job like for Windows :s
+	elif 'version' in argv:
+		v = sys.version_info;
+		print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
+		print 'I am using python %s.%s.%s' % (v.major, v.minor, v.micro)
 		if OS == 'WINDOWS':
+			from PIL import Image
+			print 'with VideoCapture %s' % VCVERSION
+			print '          and PIL %s' % Image.VERSION
+		sys.exit(0)
+	else:
+		if OS == 'WINDOWS':
+			# Cron job like for Windows :s
 			while True:
 				if stolen():
-					snapshot(True, public_ip())
-					time.sleep(300) # 5 minutes
+					snapshot(True)
+					time.sleep(300 - (time.time() - T)) # < 5 minutes
 				else:
-					snapshot(False, public_ip())
-					time.sleep(900) # 15 minutes
+					snapshot(False)
+					time.sleep(900 - (time.time() - T)) # < 15 minutes
+				# Reload configuration
+				config()
 		else:
 			if stolen():
 				for i in range(1, 2):
-					snapshot(True, public_ip())
-					time.sleep(300) # 5 minutes
+					snapshot(True)
+					time.sleep(300 - (time.time() - T)) # < 5 minutes
 			else:
-				snapshot(False, public_ip())
+				snapshot(False)

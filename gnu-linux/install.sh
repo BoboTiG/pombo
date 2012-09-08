@@ -11,27 +11,27 @@ fi
 
 echo "\nInstalling (verbose) ..."
 install -v pombo.conf /etc
-install -v pombo.py /usr/local/bin
+install -v pombo.py /usr/local/bin/pombo
 chmod 600 -v /etc/pombo.conf
-chmod +x -v /usr/local/bin/pombo.py
+chmod +x -v /usr/local/bin/pombo
 if test -f /etc/crontab ; then
-	if [ $(grep -c "/usr/local/bin/pombo.py" /etc/crontab) != 0 ] ; then
-		echo "« sed -i '\/usr\/local\/bin\/pombo.py/d' /etc/crontab »"
-		sed -i '\/usr\/local\/bin\/pombo.py/d' /etc/crontab
+	if [ $(grep -c "/usr/local/bin/pombo" /etc/crontab) != 0 ] ; then
+		echo "« sed -i '\/usr\/local\/bin\/pombo/d' /etc/crontab »"
+		sed -i '\/usr\/local\/bin\/pombo/d' /etc/crontab
 	fi
 else
 	echo "« touch /etc/crontab »"
 	touch /etc/crontab
 	chmod 644 -v /etc/crontab
 fi
-echo "« */15 * * * * root /usr/local/bin/pombo.py >>/etc/crontab »"
-echo "*/15 * * * * root /usr/local/bin/pombo.py" >>/etc/crontab
+echo "« */15 * * * * root /usr/local/bin/pombo >>/etc/crontab »"
+echo "*/15 * * * * root /usr/local/bin/pombo" >>/etc/crontab
 [ -f /var/local/pombo ] && rm -fv /var/local/pombo
 echo "Done."
 
 echo "\nChecking dependancies ..."
 ok=1
-for package in python gpg ifconfig iwlist traceroute import streamer pngnq; do
+for package in python gpg ifconfig iwlist traceroute import streamer; do
 	test=$(which ${package})
 	[ $? != 0 ] && echo " ! ${package} needed but not installed." && ok=0
 done
@@ -39,7 +39,7 @@ case ${ok} in
 	1) echo "Done." ;;
 	*) 
 		echo "Please install necessary tools before continuing."
-		echo " i.e.: python gnupg net-tools iw traceroute imagemagick streamer pngnq"
+		echo " i.e.: python gnupg net-tools iw traceroute imagemagick streamer"
 	;;
 esac
 

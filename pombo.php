@@ -1,9 +1,10 @@
 <?php
-	/***************
-	 * Pombo 0.0.9 *
-	 ***************/
+	/****************
+	 * Pombo 0.0.10 *
+	 ****************/
 	 
 	error_reporting(0);
+	usleep(200000);
 	$PASSWORD  = 'mysecret';
 	$CHECKFILE = '.stolen';
 	
@@ -25,6 +26,7 @@
 	/* Stolen! */
 	if ( ! empty($_GET) ) {
 		if ( isset($_GET['check']) && $_GET['check'] == $CHECKFILE ) {
+			usleep(200000);
 			if ( file_exists($CHECKFILE) )
 				die('Computer already stolen!');
 			$fh = fopen($CHECKFILE, 'xb');
@@ -35,14 +37,14 @@
 			fclose($fh);
 			die('File created, pombo will see it and check every 5 minutes.');
 		}
+		if ( isset($_GET['myip']) )
+			die($_SERVER['REMOTE_ADDR']);
 		die('Nothing to do ...');
 	}
 	/* Routine */
 	else {
 		if ( empty($_POST) )
 			die('Nothing to do ...');
-		if ( isset($_POST['myip']) )
-			die($_SERVER['REMOTE_ADDR']);
 		if ( isset($_POST['verify']) )
 			if ( $_POST['verify'] != hash_hmac('sha1', $_POST['filedata'].'***'.$_POST['filename'], $PASSWORD) )
 				die('Wrong password!');
