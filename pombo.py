@@ -28,7 +28,7 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10-a4'
+PROGRAMVERSION = '0.0.10-a5'
 VCVERSION = '0.9.5'
 
 import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
@@ -261,9 +261,9 @@ def snapshot(stolen):
 
 	# Initialisations
 	global PUBLIC_IP, FILENAME, T, F
-	PUBLIC_IP = public_ip()
-	FILENAME = platform.node() + time.strftime('_%Y%m%d_%H%M%S')
 	F = open(LOGFILE, 'a+b')
+	FILENAME = platform.node() + time.strftime('_%Y%m%d_%H%M%S')
+	PUBLIC_IP = public_ip()
 	filestozip = []
 
 	# Make sure we are connected to the internet:
@@ -276,7 +276,6 @@ def snapshot(stolen):
 	if not stolen and CONFIG['onlyonipchange'] == 'True':
 		# Read previous IP
 		if not os.path.isfile(IPFILE):
-			# First run: file containing IP is no present.
 			_print(' + First run, writing down IP in pombo.')
 			f = open(IPFILE, 'w+b')
 			f.write(ip_hash(PUBLIC_IP))
@@ -291,6 +290,7 @@ def snapshot(stolen):
 			_print(' + IP has changed.')
 
 	# Create the system report (IP, date/hour...)
+	_print(' - Filename: %s' % FILENAME)
 	_print(' - Collecting system info.')
 	filepath = '%s%c%s.txt' % (TMP, SEP, FILENAME)
 	f = open(filepath, 'ab')
@@ -349,7 +349,7 @@ def snapshot(stolen):
 		try:
 			response = urllib2.urlopen(request)
 			page = response.read(2000)
-			_print('       + answer: %s' % page.strip())
+			_print('       > %s' % page.strip())
 		except Exception as ex:
 			_print('       ! failed: %s' % ex)
 			pass
@@ -524,8 +524,9 @@ if __name__ == '__main__':
 				config()
 		else:
 			if stolen():
-				for i in range(1, 2):
+				for i in range(0, 2):
 					snapshot(True)
 					time.sleep(300 - (time.time() - T)) # < 5 minutes
+					config()
 			else:
 				snapshot(False)
