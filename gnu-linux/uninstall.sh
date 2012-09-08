@@ -12,7 +12,7 @@ fi
 echo "\nUninstalling (verbose) ..."
 rm -fv /etc/pombo.conf
 [ -f /var/local/pombo ] && rm -fv /var/local/pombo
-if -f /usr/local/bin/pombo.py; then
+if [ -f /usr/local/bin/pombo.py ]; then
 	# Retro-compatibility (version <= 0.0.9)
 	rm -fv /usr/local/bin/pombo.py
 	echo "« sed -i '\/usr\/local\/bin\/pombo.py/d' /etc/crontab »"
@@ -28,7 +28,7 @@ cat <<EOM
 
 Thank you to have used Pombo!
 If you have critics, suggestions, advices or ideas:
-	bobotig@gmail.com
+	bobotig (at) gmail (dot) com
 
 EOM
 
