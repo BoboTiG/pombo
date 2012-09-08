@@ -28,7 +28,7 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10-a5'
+PROGRAMVERSION = '0.0.10-a6'
 VCVERSION = '0.9.5'
 
 import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
@@ -134,8 +134,10 @@ def currentuser():
 		user = runprocess(['echo', '%USERNAME%'], useshell = True)
 	else:
 		for line in runprocess(['who','-s']).split('\n'):
-			if '(:0)' in line:
+			if 'tty' in line:
 				user = line.split(' ')[0]
+				if '(:0)' in line:
+					break
 	return user
 
 def file_size(file):
