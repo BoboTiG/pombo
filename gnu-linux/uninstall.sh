@@ -11,10 +11,17 @@ fi
 
 echo "\nUninstalling (verbose) ..."
 rm -fv /etc/pombo.conf
-rm -fv /usr/local/bin/pombo
 [ -f /var/local/pombo ] && rm -fv /var/local/pombo
-echo "« sed -i '\/usr\/local\/bin\/pombo/d' /etc/crontab »"
-sed -i '\/usr\/local\/bin\/pombo/d' /etc/crontab
+if -f /usr/local/bin/pombo.py; then
+	# Retro-compatibility (version <= 0.0.9)
+	rm -fv /usr/local/bin/pombo.py
+	echo "« sed -i '\/usr\/local\/bin\/pombo.py/d' /etc/crontab »"
+	sed -i '\/usr\/local\/bin\/pombo.py/d' /etc/crontab
+else
+	rm -fv /usr/local/bin/pombo
+	echo "« sed -i '\/usr\/local\/bin\/pombo/d' /etc/crontab »"
+	sed -i '\/usr\/local\/bin\/pombo/d' /etc/crontab
+fi
 echo "Done."
 
 cat <<EOM
