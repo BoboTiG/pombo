@@ -74,6 +74,9 @@ if not os.access(CONF, os.R_OK):
 	sys.exit(1)
 CONFIG = {}
 
+# Timeout for all URL requests
+TIMEOUT = 60
+
 # Others
 TMP = tempfile.gettempdir()
 PUBLIC_IP = FILENAME = T = None
@@ -184,7 +187,7 @@ def public_ip():
 		try:
 			_print('     from %s' % domain)
 			request = urllib2.Request(distant + '?' + urllib.urlencode({'myip':'1'}))
-			response = urllib2.urlopen(request)
+			response = urllib2.urlopen(request, timeout=TIMEOUT)
 			ip = response.read(256)
 			if ip_regex.match(ip):
 				return ip
@@ -347,7 +350,7 @@ def snapshot(stolen):
 		parameters = {'filename':gpgfilename, 'filedata':filedata, 'token':authtoken}
 		request = urllib2.Request(distant, urllib.urlencode(parameters))
 		try:
-			response = urllib2.urlopen(request)
+			response = urllib2.urlopen(request, timeout=TIMEOUT)
 			page = response.read(2000)
 			_print('       > %s' % page.strip())
 		except Exception as ex:
@@ -371,7 +374,7 @@ def stolen():
 		parameters = {'filename':CONFIG['checkfile'], 'filedata':salt, 'verify':authtoken}
 		request = urllib2.Request(distant, urllib.urlencode(parameters))
 		try:
-			response = urllib2.urlopen(request)
+			response = urllib2.urlopen(request, timeout=TIMEOUT)
 			page = response.read(2000)
 			if page.strip() == '1':
 				_print('       <<!>> Stolen computer <<!>>')
