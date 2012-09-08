@@ -84,9 +84,11 @@ PUBLIC_IP = FILENAME = T = None
 # ----------------------------------------------------------------------
 
 def config():
+	''' Get configuration from CONF file '''
 	config = ConfigParser.SafeConfigParser()
 	config.read(CONF)
-
+	
+	_print(' - Loading configuration.')
 	global CONFIG
 	CONFIG = {
 		# Pombo related
@@ -95,7 +97,6 @@ def config():
 		'serverurl'     :config.get('GENERAL','serverurl').strip(),
 		'onlyonipchange':config.get('GENERAL','onlyonipchange').strip(),
 		'checkfile'     :config.get('GENERAL','checkfile').strip(),
-		
 		# Additional tools
 		'network_config'    :config.get(OS,'network_config').strip(),
 		'wifi_access_points':config.get(OS,'wifi_access_points').strip(),
@@ -105,13 +106,12 @@ def config():
 		'camshot'           :config.get(OS,'camshot').strip(),
 		'camshot_filetype'  :''
 	}
-	
-	if CONFIG['onlyonipchange'] != 'True' and CONFIG['onlyonipchange'] != 'False':
-		print ' ! Config file error: wrong "onlyonipchange" parameter, should be True or False.'
-		print '   Assuming False.'
-		CONFIG['onlyonipchange'] = 'False'
 	if CONFIG['serverurl'] == '':
-		print ' ! Please specifiy at least one server for serverurl option.'
+		print ' ! Config file error: please specifiy at least one server for "serverurl" parameter.'
+	if CONFIG['onlyonipchange'] != 'True' and CONFIG['onlyonipchange'] != 'False':
+		_print(' ! Config file error: wrong "onlyonipchange" parameter, should be True or False.')
+		_print('   Assuming False.')
+		CONFIG['onlyonipchange'] = 'False'
 	if OS == 'GNULINUX':
 		CONFIG['camshot_filetype'] = config.get(OS,'camshot_filetype').strip()
 
@@ -450,83 +450,83 @@ def wifiaccesspoints():
 # --- [ C'est parti mon kiki ! ] ---------------------------------------
 # ----------------------------------------------------------------------
 
-if __name__ == '__main__':
-	_print('%s %s' % (PROGRAMNAME, PROGRAMVERSION))
-	
-	# Load configuration
-	config()
-	
-	argv = sys.argv[1:]
-	if 'add' in argv:
-		ip = public_ip()
-		if not ip:
-			print 'Computer does not seem to be connected to the internet. Aborting.'
-		else:
-			known = False
-			if os.path.isfile(IPFILE):
-				# Read previous IP
+try:
+	if __name__ == '__main__':
+		_print('%s %s' % (PROGRAMNAME, PROGRAMVERSION))
+		
+		# Load configuration
+		config()
+		
+		argv = sys.argv[1:]
+		if 'add' in argv:
+			ip = public_ip()
+			if not ip:
+				print 'Computer does not seem to be connected to the internet. Aborting.'
+			else:
+				known = False
+				if os.path.isfile(IPFILE):
+					# Read previous IP
+					f = open(IPFILE, 'rb')
+					previous_ips = f.readlines()
+					f.close()
+					if ip_hash(ip) in [s.strip() for s in previous_ips]:
+						print 'IP already known.'
+						known = True
+				if known is False:
+					print 'Adding current ip %s to %s.' % (ip, IPFILE)
+					f = open(IPFILE, 'a+b')
+					f.write(ip_hash(ip) + "\n")
+					f.close()
+		elif 'help' in argv:
+			print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
+			print 'Options ---'
+			print '   add      add the current IP to %s' % IPFILE
+			print '   help     show this message'
+			print '   ip       show current IP'
+			print '   list     list known IP'
+			print '   version  show %s, python and versions' % PROGRAMNAME
+		elif 'ip' in argv:
+			ip = public_ip()
+			if not ip:
+				print 'Computer does not seem to be connected to the internet. Aborting.'
+			else:
+				print 'IP  : %s' % ip
+				iphash = ip_hash(ip)
+				print 'Hash: %s...%s' % (iphash[:20], iphash[-20:])
+		elif 'list' in argv:
+			if not os.path.isfile(IPFILE):
+				print '%s does not exist!' % IPFILE
+			else:
 				f = open(IPFILE, 'rb')
-				previous_ips = f.readlines()
+				print 'IP hashes in %s:' % IPFILE
+				for s in f.readlines():
+					print '   %s...%s' % (s[:20], s.strip()[-20:])
 				f.close()
-				if ip_hash(ip) in [s.strip() for s in previous_ips]:
-					print 'IP already known.'
-					known = True
-			if known is False:
-				print 'Adding current ip %s to %s.' % (ip, IPFILE)
-				f = open(IPFILE, 'a+b')
-				f.write(ip_hash(ip) + "\n")
-				f.close()
-	elif 'help' in argv:
-		print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
-		print 'Options ---'
-		print '   add      add the current IP to %s' % IPFILE
-		print '   help     show this message'
-		print '   ip       show current IP'
-		print '   list     list known IP'
-		print '   version  show %s, python and versions' % PROGRAMNAME
-	elif 'ip' in argv:
-		ip = public_ip()
-		if not ip:
-			print 'Computer does not seem to be connected to the internet. Aborting.'
+		elif 'version' in argv:
+			v = sys.version_info;
+			print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
+			print 'I am using python %s.%s.%s' % (v.major, v.minor, v.micro)
+			if OS == 'WINDOWS':
+				from PIL import Image
+				print 'with VideoCapture %s' % VCVERSION
+				print '          and PIL %s' % Image.VERSION
 		else:
-			print 'IP  : %s' % ip
-			iphash = ip_hash(ip)
-			print 'Hash: %s...%s' % (iphash[:20], iphash[-20:])
-	elif 'list' in argv:
-		if not os.path.isfile(IPFILE):
-			print '%s does not exist!' % IPFILE
-		else:
-			f = open(IPFILE, 'rb')
-			print 'IP hashes in %s:' % IPFILE
-			for s in f.readlines():
-				print '   %s...%s' % (s[:20], s.strip()[-20:])
-			f.close()
-	elif 'version' in argv:
-		v = sys.version_info;
-		print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
-		print 'I am using python %s.%s.%s' % (v.major, v.minor, v.micro)
-		if OS == 'WINDOWS':
-			from PIL import Image
-			print 'with VideoCapture %s' % VCVERSION
-			print '          and PIL %s' % Image.VERSION
-		sys.exit(0)
-	else:
-		if OS == 'WINDOWS':
-			# Cron job like for Windows :s
-			while True:
+			if OS == 'WINDOWS':
+				# Cron job like for Windows :s
+				while True:
+					if stolen():
+						snapshot(True)
+						time.sleep(300 - (time.time() - T)) # < 5 minutes
+					else:
+						snapshot(False)
+						time.sleep(900 - (time.time() - T)) # < 15 minutes
+			else:
 				if stolen():
-					snapshot(True)
-					time.sleep(300 - (time.time() - T)) # < 5 minutes
+					for i in range(0, 2):
+						snapshot(True)
+						time.sleep(300 - (time.time() - T)) # < 5 minutes
 				else:
 					snapshot(False)
-					time.sleep(900 - (time.time() - T)) # < 15 minutes
-				# Reload configuration
-				config()
-		else:
-			if stolen():
-				for i in range(0, 2):
-					snapshot(True)
-					time.sleep(300 - (time.time() - T)) # < 5 minutes
-					config()
-			else:
-				snapshot(False)
+except (KeyboardInterrupt, SystemExit):
+    _print('*** STOPPING operations ***')
+    sys.exit(1)
