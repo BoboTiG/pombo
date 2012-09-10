@@ -26,7 +26,6 @@
 	/* Stolen! */
 	if ( ! empty($_GET) ) {
 		if ( isset($_GET['check']) && $_GET['check'] == $CHECKFILE ) {
-			usleep(200000);
 			if ( file_exists($CHECKFILE) )
 				die('Computer already stolen!');
 			$fh = fopen($CHECKFILE, 'xb');
@@ -38,7 +37,7 @@
 			die('File created, pombo will see it and check every 5 minutes.');
 		}
 		if ( isset($_GET['myip']) )
-			die($_SERVER['REMOTE_ADDR']);
+			die( ! empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
 		die('Nothing to do ...');
 	}
 	/* Routine */
