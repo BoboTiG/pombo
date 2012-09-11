@@ -28,7 +28,7 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10-a6'
+PROGRAMVERSION = '0.0.10-a7'
 VCVERSION = '0.9.5'
 
 import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
@@ -246,9 +246,9 @@ def screenshot():
 		return None
 
 	if OS == 'WINDOWS':
-		from PIL import ImageGrab
-		img = ImageGrab.grab() 
-		img.save(filepath, 'JPEG')
+		from PIL import Image,ImageGrab
+		img = ImageGrab.grab(Image.WEB) 
+		img.save(filepath, 'JPEG', quality=50)
 	else:
 		os.system(CONFIG['screenshot'] % filepath)
 	if not os.path.isfile(filepath):
