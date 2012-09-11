@@ -43,21 +43,22 @@ Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 
 [Dirs]
 Name: "{app}\python"
+Name: "{app}\doc"
 
 [Files]
 ;Source: "{#MyAppSDir}pombo-{#MyAppVersion}\gpg4win-light-2.1.0.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\add-ip.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\CREDITS"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\INSTALL"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\CREDITS"; DestDir: "{app}}\doc"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\INSTALL"; DestDir: "{app}}\doc"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\LICENSE"; DestDir: "{app}}\doc"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.conf"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.php"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\python\*"; DestDir: "{app}\python"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\REQUIREMENTS"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\REQUIREMENTS"; DestDir: "{app}}\doc"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\test-pombo.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\VERSION"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\VERSION"; DestDir: "{app}}\doc"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Registry]
