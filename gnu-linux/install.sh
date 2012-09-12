@@ -31,7 +31,7 @@ echo "Done."
 
 echo "\nChecking dependancies ..."
 ok=1
-for package in python gpg ifconfig iwlist traceroute import streamer; do
+for package in python gpg ifconfig iwlist traceroute scrot streamer; do
 	test=$(which ${package})
 	[ $? != 0 ] && echo " ! ${package} needed but not installed." && ok=0
 done
@@ -39,7 +39,7 @@ case ${ok} in
 	1) echo "Done." ;;
 	*) 
 		echo "Please install necessary tools before continuing."
-		echo " i.e.: python gnupg net-tools iw traceroute imagemagick streamer"
+		echo " i.e.: python gnupg net-tools iw traceroute scrot streamer"
 	;;
 esac
 

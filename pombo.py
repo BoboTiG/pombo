@@ -28,13 +28,13 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10-a8'
+PROGRAMVERSION = '0.0.10-a10'
 URL = 'https://github.com/BoboTiG/pombo'
 UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 VCVERSION = '0.9.5'
 
 import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
-       random,re,subprocess,sys,tempfile,time,urllib,urllib2,zipfile
+       re,subprocess,sys,tempfile,time,urllib,urllib2,zipfile
 
 
 # ----------------------------------------------------------------------
@@ -62,13 +62,11 @@ encoding = sys.stdin.encoding or locale.getdefaultlocale()[1]
 if not encoding:
 	encoding = 'utf-8'
 
-# Output
-LOG = True # Enable logging - should be at True only for dev.
+# Output - managed by "check" argument
 DEBUG = False
-if 'check' in sys.argv:
-	DEBUG = True
-if LOG:
-	F = open(LOGFILE, 'a+b')
+# Development help
+LOG = True # Enable logging
+DEBUGERR = True # Print serr too
 
 # Get the configuration options
 if not os.access(CONF, os.R_OK):
@@ -133,9 +131,9 @@ def currentuser():
 	'''
 	user = None
 	if OS == 'WINDOWS':
-		user = runprocess(['echo', '%USERNAME%'], useshell = True)
+		user = runprocess(['echo', '%USERNAME%'], True)
 	else:
-		for line in runprocess(['who','-s']).split('\n'):
+		for line in runprocess(['who','-s'], True).split('\n'):
 			if 'tty' in line:
 				user = line.split(' ')[0]
 				if '(:0)' in line:
@@ -175,9 +173,6 @@ def _print(string):
 		print string
 	if LOG:
 		F.write(string + CLRF)
-		if string[-1] == CLRF:
-			F.close()
-	return
 
 def public_ip():
 	''' Returns your public IP address.
@@ -196,7 +191,7 @@ def public_ip():
 			if ip_regex.match(ip):
 				return ip
 		except Exception as ex:
-			pass
+			_print('     failed: %s' % ex)
 	return None
 
 def runprocess(commandline,useshell=False):
@@ -227,6 +222,9 @@ def runprocess(commandline,useshell=False):
 			sout = ''
 		if not serr:
 			serr = ''
+		else:
+			if DEBUGERR:
+				_print("serr = %s" % serr)
 		return unicode(sout, encoding).encode('utf-8') + "\n" + unicode(serr, encoding).encode('utf-8')
 	except Exception as ex:  # Yeah, I know this is bad
 		_print(' ! Process failed: %s (%s)' % (commandline, ex))
@@ -234,7 +232,7 @@ def runprocess(commandline,useshell=False):
 
 def screenshot():
 	''' Takes a screenshot and returns the path to the saved image 
-	    (in /tmp). None if could not take the screenshot. 
+	    (in TMP). None if could not take the screenshot. 
 	'''
 	if CONFIG['screenshot'] == 'False':
 		_print(' . Skipping screenshot.')
@@ -252,7 +250,8 @@ def screenshot():
 		img = ImageGrab.grab(Image.WEB) 
 		img.save(filepath, 'JPEG', quality=50)
 	else:
-		os.system(CONFIG['screenshot'] % filepath)
+		cmd = CONFIG['screenshot'] % (user, filepath)
+		runprocess(cmd, useshell=True)
 	if not os.path.isfile(filepath):
 		return None
 	return filepath
@@ -267,8 +266,7 @@ def snapshot(stolen):
 	# If a particular snapshot fails, it will simply skip it.
 
 	# Initialisations
-	global PUBLIC_IP, FILENAME, T, F
-	F = open(LOGFILE, 'a+b')
+	global PUBLIC_IP, FILENAME, T
 	FILENAME = platform.node() + time.strftime('_%Y%m%d_%H%M%S')
 	PUBLIC_IP = public_ip()
 	filestozip = []
@@ -330,7 +328,7 @@ def snapshot(stolen):
 
 	# Encrypt using gpg with a specified public key
 	_print(' - Encrypting zip with GnuPG.')
-	os.system('gpg --batch --no-default-keyring --trust-model always -r %s -e "%s"' % (CONFIG['gpgkeyid'], zipfilepath))
+	runprocess(['gpg', '--batch', '--no-default-keyring', '--trust-model', 'always', '-r', CONFIG['gpgkeyid'], '-e', zipfilepath])
 	os.remove(zipfilepath)
 	gpgfilepath = zipfilepath + '.gpg'
 	if not os.path.isfile(gpgfilepath):
@@ -422,7 +420,7 @@ def webcamshot():
 					_print(' ! Error while taking webcamshot: no device available.')
 					return None
 			#cam.setResolution(768, 576) # Here you can modify the picture resolution
-			camshot = cam.getImage()
+			cam.getImage()
 			time.sleep(1)
 			cam.saveSnapshot(filepath)
 		except Exception as ex:
@@ -431,15 +429,16 @@ def webcamshot():
 	else:
 		filepath = '%s%c%s_webcam.%s' % (TMP, SEP, FILENAME, CONFIG['camshot_filetype'])
 		try:
-			os.system(CONFIG['camshot'] % filepath)
-			time.sleep(1)
+			cmd = CONFIG['camshot'] % filepath
+			runprocess(cmd, useshell=True)
 		except Exception as ex:
 			_print(' ! Error while taking webcamshot: %s' % ex[0])
 			return None
 		if os.path.isfile(filepath):
 			if CONFIG['camshot_filetype'] == 'ppm':
 				new_filepath = '%s%c%s_webcam.jpg' % (TMP, SEP, FILENAME)
-				os.system('/usr/bin/convert %s %s' % (filepath, new_filepath))
+				cmd = '/usr/bin/convert %s %s' %(filepath, new_filepath)
+				runprocess(cmd.split(' '))
 				os.unlink(filepath)
 				filepath = new_filepath
 	if not os.path.isfile(filepath):
@@ -457,7 +456,9 @@ def wifiaccesspoints():
 # ----------------------------------------------------------------------
 # --- [ Pombo options ] ------------------------------------------------
 # ----------------------------------------------------------------------
+
 def pombo_add():
+	config()
 	ip = public_ip()
 	if not ip:
 		print 'Computer does not seem to be connected to the internet. Aborting.'
@@ -481,6 +482,7 @@ def pombo_help():
 	print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
 	print 'Options ---'
 	print '   add      add the current IP to %s' % IPFILE
+	print '   check    launch Pombo in verbose mode'
 	print '   help     show this message'
 	print '   ip       show current IP'
 	print '   list     list known IP'
@@ -488,6 +490,7 @@ def pombo_help():
 	print '   version  show %s, python and versions' % PROGRAMNAME
 
 def pombo_ip():
+	config()
 	ip = public_ip()
 	if not ip:
 		print 'Computer does not seem to be connected to the internet. Aborting.'
@@ -512,17 +515,18 @@ def pombo_update():
 		request = urllib2.Request(UPLINK)
 		response = urllib2.urlopen(request, timeout=TIMEOUT)
 		version = response.read(2000).strip()
-		if re.match('^\d{1,}.\d{1}.\d{1,}$', version) and version != PROGRAMVERSION:
-			print ' + Yep! A new version is available: %s' % version
-			print ' - Check %s for upgrade.' % URL
-		elif re.match('^\d{1,}.\d{1}.\d{1,}-', version):
-			typever = 'Alpha'
-			if 'b' in version:
-				typever = 'Beta'
-			print ' - %s version available: %s' % (typever, version)
-			print ' . You should upgrade only for tests purpose!'
-			print ' - Check %s' % URL
-			print '   and report issues/ideas on GitHub or at bobotig (at) gmail (dot) com.'
+		if version != PROGRAMVERSION:
+			if re.match('^\d{1,}.\d{1}.\d{1,}$', version):
+				print ' + Yep! A new version is available: %s' % version
+				print ' - Check %s for upgrade.' % URL
+			elif re.match('^\d{1,}.\d{1}.\d{1,}-', version):
+				typever = 'Alpha'
+				if 'b' in version:
+					typever = 'Beta'
+				print ' - %s version available: %s' % (typever, version)
+				print ' . You should upgrade only for tests purpose!'
+				print ' - Check %s' % URL
+				print '   and report issues/ideas on GitHub or at bobotig (at) gmail (dot) com.'
 		else:
 			print 'Version is up to date!'
 	except Exception as ex:
@@ -537,6 +541,30 @@ def pombo_version():
 		from PIL import Image
 		print 'with VideoCapture %s' % VCVERSION
 		print '          and PIL %s' % Image.VERSION
+
+def pombo_work(debug=False):
+	global DEBUG, F
+	DEBUG = debug
+	
+	_print('%s %s' % (PROGRAMNAME, PROGRAMVERSION))
+	config()
+	if OS == 'WINDOWS':
+		# Cron job like for Windows :s
+		while True:
+			if stolen():
+				snapshot(True)
+				time.sleep(300 - (time.time() - T)) # < 5 minutes
+			else:
+				snapshot(False)
+				time.sleep(900 - (time.time() - T)) # < 15 minutes
+	else:
+		if stolen():
+			for i in range(1, 3):
+				_print(' * Attempt %d/2 *' % i)
+				snapshot(True)
+				time.sleep(300 - (time.time() - T)) # < 5 minutes
+		else:
+			snapshot(False)
 	
 
 # ----------------------------------------------------------------------
@@ -545,41 +573,29 @@ def pombo_version():
 
 try:
 	if __name__ == '__main__':
-		_print('%s %s' % (PROGRAMNAME, PROGRAMVERSION))
-		
-		# Load configuration
-		config()
-		
+		F = open(LOGFILE, 'a+b')
 		argv = sys.argv[1:]
-		if 'add' in argv:
-			pombo_add()
-		elif 'help' in argv:
-			pombo_help()
-		elif 'ip' in argv:
-			pombo_ip()
-		elif 'list' in argv:
-			pombo_list()
-		elif 'update' in argv:
-			pombo_update()
-		elif 'version' in argv:
-			pombo_version()
-		else:
-			if OS == 'WINDOWS':
-				# Cron job like for Windows :s
-				while True:
-					if stolen():
-						snapshot(True)
-						time.sleep(300 - (time.time() - T)) # < 5 minutes
-					else:
-						snapshot(False)
-						time.sleep(900 - (time.time() - T)) # < 15 minutes
+		if argv:
+			if 'add' in argv:
+				pombo_add()
+			elif 'check' in argv:
+				pombo_work(True)
+			elif 'help' in argv:
+				pombo_help()
+			elif 'ip' in argv:
+				pombo_ip()
+			elif 'list' in argv:
+				pombo_list()
+			elif 'update' in argv:
+				pombo_update()
+			elif 'version' in argv:
+				pombo_version()
 			else:
-				if stolen():
-					for i in range(0, 2):
-						snapshot(True)
-						time.sleep(300 - (time.time() - T)) # < 5 minutes
-				else:
-					snapshot(False)
+				print 'Unknown argument - try "help".'
+		else:
+			pombo_work()
+		F.close()
 except (KeyboardInterrupt, SystemExit):
-    _print('*** STOPPING operations ***')
-    sys.exit(1)
+	_print('*** STOPPING operations ***')
+	F.close()
+	sys.exit(1)

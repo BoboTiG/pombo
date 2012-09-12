@@ -15,7 +15,7 @@
 	- GnuPG
 	- iw
 	- traceroute
-	- imagemagick
+	- scrot
 	- streamer
 	All of these tools should be into your repositories:
-		Debian based: aptitude install python gnupg net-tools iw traceroute imagemagick streamer
+		Debian based: aptitude install python gnupg net-tools iw traceroute scrot streamer
