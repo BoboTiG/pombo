@@ -28,7 +28,9 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10-a7'
+PROGRAMVERSION = '0.0.10-a8'
+URL = 'https://github.com/BoboTiG/pombo'
+UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 VCVERSION = '0.9.5'
 
 import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
@@ -451,6 +453,92 @@ def wifiaccesspoints():
 	return runprocess(CONFIG['wifi_access_points'].split(' '))
 
 
+
+# ----------------------------------------------------------------------
+# --- [ Pombo options ] ------------------------------------------------
+# ----------------------------------------------------------------------
+def pombo_add():
+	ip = public_ip()
+	if not ip:
+		print 'Computer does not seem to be connected to the internet. Aborting.'
+	else:
+		known = False
+		if os.path.isfile(IPFILE):
+			# Read previous IP
+			f = open(IPFILE, 'rb')
+			previous_ips = f.readlines()
+			f.close()
+			if ip_hash(ip) in [s.strip() for s in previous_ips]:
+				print 'IP already known.'
+				known = True
+		if known is False:
+			print 'Adding current ip %s to %s.' % (ip, IPFILE)
+			f = open(IPFILE, 'a+b')
+			f.write(ip_hash(ip) + "\n")
+			f.close()
+
+def pombo_help():
+	print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
+	print 'Options ---'
+	print '   add      add the current IP to %s' % IPFILE
+	print '   help     show this message'
+	print '   ip       show current IP'
+	print '   list     list known IP'
+	print '   update   check for update'
+	print '   version  show %s, python and versions' % PROGRAMNAME
+
+def pombo_ip():
+	ip = public_ip()
+	if not ip:
+		print 'Computer does not seem to be connected to the internet. Aborting.'
+	else:
+		print 'IP  : %s' % ip
+		iphash = ip_hash(ip)
+		print 'Hash: %s...%s' % (iphash[:20], iphash[-20:])
+
+def pombo_list():
+	if not os.path.isfile(IPFILE):
+		print '%s does not exist!' % IPFILE
+	else:
+		f = open(IPFILE, 'rb')
+		print 'IP hashes in %s:' % IPFILE
+		for s in f.readlines():
+			print '   %s...%s' % (s[:20], s.strip()[-20:])
+		f.close()
+
+def pombo_update():
+	print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
+	try:
+		request = urllib2.Request(UPLINK)
+		response = urllib2.urlopen(request, timeout=TIMEOUT)
+		version = response.read(2000).strip()
+		if re.match('^\d{1,}.\d{1}.\d{1,}$', version) and version != PROGRAMVERSION:
+			print ' + Yep! A new version is available: %s' % version
+			print ' - Check %s for upgrade.' % URL
+		elif re.match('^\d{1,}.\d{1}.\d{1,}-', version):
+			typever = 'Alpha'
+			if 'b' in version:
+				typever = 'Beta'
+			print ' - %s version available: %s' % (typever, version)
+			print ' . You should upgrade only for tests purpose!'
+			print ' - Check %s' % URL
+			print '   and report issues/ideas on GitHub or at bobotig (at) gmail (dot) com.'
+		else:
+			print 'Version is up to date!'
+	except Exception as ex:
+		print ' ! Arf, check failed: %s !' % ex
+		print ' . Please check later.'
+
+def pombo_version():
+	v = sys.version_info;
+	print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
+	print 'I am using python %s.%s.%s' % (v.major, v.minor, v.micro)
+	if OS == 'WINDOWS':
+		from PIL import Image
+		print 'with VideoCapture %s' % VCVERSION
+		print '          and PIL %s' % Image.VERSION
+	
+
 # ----------------------------------------------------------------------
 # --- [ C'est parti mon kiki ! ] ---------------------------------------
 # ----------------------------------------------------------------------
@@ -464,57 +552,17 @@ try:
 		
 		argv = sys.argv[1:]
 		if 'add' in argv:
-			ip = public_ip()
-			if not ip:
-				print 'Computer does not seem to be connected to the internet. Aborting.'
-			else:
-				known = False
-				if os.path.isfile(IPFILE):
-					# Read previous IP
-					f = open(IPFILE, 'rb')
-					previous_ips = f.readlines()
-					f.close()
-					if ip_hash(ip) in [s.strip() for s in previous_ips]:
-						print 'IP already known.'
-						known = True
-				if known is False:
-					print 'Adding current ip %s to %s.' % (ip, IPFILE)
-					f = open(IPFILE, 'a+b')
-					f.write(ip_hash(ip) + "\n")
-					f.close()
+			pombo_add()
 		elif 'help' in argv:
-			print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
-			print 'Options ---'
-			print '   add      add the current IP to %s' % IPFILE
-			print '   help     show this message'
-			print '   ip       show current IP'
-			print '   list     list known IP'
-			print '   version  show %s, python and versions' % PROGRAMNAME
+			pombo_help()
 		elif 'ip' in argv:
-			ip = public_ip()
-			if not ip:
-				print 'Computer does not seem to be connected to the internet. Aborting.'
-			else:
-				print 'IP  : %s' % ip
-				iphash = ip_hash(ip)
-				print 'Hash: %s...%s' % (iphash[:20], iphash[-20:])
+			pombo_ip()
 		elif 'list' in argv:
-			if not os.path.isfile(IPFILE):
-				print '%s does not exist!' % IPFILE
-			else:
-				f = open(IPFILE, 'rb')
-				print 'IP hashes in %s:' % IPFILE
-				for s in f.readlines():
-					print '   %s...%s' % (s[:20], s.strip()[-20:])
-				f.close()
+			pombo_list()
+		elif 'update' in argv:
+			pombo_update()
 		elif 'version' in argv:
-			v = sys.version_info;
-			print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
-			print 'I am using python %s.%s.%s' % (v.major, v.minor, v.micro)
-			if OS == 'WINDOWS':
-				from PIL import Image
-				print 'with VideoCapture %s' % VCVERSION
-				print '          and PIL %s' % Image.VERSION
+			pombo_version()
 		else:
 			if OS == 'WINDOWS':
 				# Cron job like for Windows :s
