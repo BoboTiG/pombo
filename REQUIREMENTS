@@ -5,10 +5,10 @@
 
 
 *** All
-	- A distant server where to put encrypted files
+	- One or more distants servers where to put encrypted files
 
 *** Windows
-	- GnuPG4Win (or GnuPT)
+	- GnuPT (or GnuPG4Win)
 
 *** GNU/Linux
 	- python

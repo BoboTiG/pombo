@@ -28,7 +28,7 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10-a10'
+PROGRAMVERSION = '0.0.10-a11'
 URL = 'https://github.com/BoboTiG/pombo'
 UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 VCVERSION = '0.9.5'
@@ -131,9 +131,9 @@ def currentuser():
 	'''
 	user = None
 	if OS == 'WINDOWS':
-		user = runprocess(['echo', '%USERNAME%'], True)
+		user = runprocess(['echo', '%USERNAME%'], useshell=True)
 	else:
-		for line in runprocess(['who','-s'], True).split('\n'):
+		for line in runprocess(['who','-s'], useshell=True).split('\n'):
 			if 'tty' in line:
 				user = line.split(' ')[0]
 				if '(:0)' in line:
@@ -437,8 +437,7 @@ def webcamshot():
 		if os.path.isfile(filepath):
 			if CONFIG['camshot_filetype'] == 'ppm':
 				new_filepath = '%s%c%s_webcam.jpg' % (TMP, SEP, FILENAME)
-				cmd = '/usr/bin/convert %s %s' %(filepath, new_filepath)
-				runprocess(cmd.split(' '))
+				runprocess(['/usr/bin/convert', filepath, new_filepath])
 				os.unlink(filepath)
 				filepath = new_filepath
 	if not os.path.isfile(filepath):
