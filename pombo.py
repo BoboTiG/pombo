@@ -28,13 +28,14 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10-a11'
+PROGRAMVERSION = '0.0.10-b1'
 URL = 'https://github.com/BoboTiG/pombo'
 UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 VCVERSION = '0.9.5'
 
 import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
        re,subprocess,sys,tempfile,time,urllib,urllib2,zipfile
+from IPy import IP
 
 
 # ----------------------------------------------------------------------
@@ -180,18 +181,17 @@ def public_ip():
 				None if not internet connection is available.
 	'''
 	_print(' - Retrieving IP address ... ')
-	ip_regex = re.compile('(([0-9]{1,3}\.){3}[0-9]{1,3})')
 	for distant in CONFIG['serverurl'].split(','):
 		domain = distant.split('/')[2]
+		_print('     from %s' % domain)
 		try:
-			_print('     from %s' % domain)
 			request = urllib2.Request(distant + '?' + urllib.urlencode({'myip':'1'}))
 			response = urllib2.urlopen(request, timeout=TIMEOUT)
 			ip = response.read(256)
-			if ip_regex.match(ip):
-				return ip
+			IP(ip)
+			return ip
 		except Exception as ex:
-			_print('     failed: %s' % ex)
+			_print('       ! failed: %s' % ex)
 	return None
 
 def runprocess(commandline,useshell=False):
@@ -350,8 +350,8 @@ def snapshot(stolen):
 		domain = distant.split('/')[2]
 		_print('     to %s' % (domain))
 		parameters = {'filename':gpgfilename, 'filedata':filedata, 'token':authtoken}
-		request = urllib2.Request(distant, urllib.urlencode(parameters))
 		try:
+			request = urllib2.Request(distant, urllib.urlencode(parameters))
 			response = urllib2.urlopen(request, timeout=TIMEOUT)
 			page = response.read(2000)
 			_print('       > %s' % page.strip())
@@ -374,8 +374,8 @@ def stolen():
 		domain = distant.split('/')[2]
 		_print('     on %s' % domain)
 		parameters = {'filename':CONFIG['checkfile'], 'filedata':salt, 'verify':authtoken}
-		request = urllib2.Request(distant, urllib.urlencode(parameters))
 		try:
+			request = urllib2.Request(distant, urllib.urlencode(parameters))
 			response = urllib2.urlopen(request, timeout=TIMEOUT)
 			page = response.read(2000)
 			if page.strip() == '1':
@@ -558,8 +558,8 @@ def pombo_work(debug=False):
 				time.sleep(900 - (time.time() - T)) # < 15 minutes
 	else:
 		if stolen():
-			for i in range(1, 3):
-				_print(' * Attempt %d/2 *' % i)
+			for i in range(1, 4):
+				_print(' * Attempt %d/3 *' % i)
 				snapshot(True)
 				time.sleep(300 - (time.time() - T)) # < 5 minutes
 		else:
