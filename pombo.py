@@ -100,7 +100,7 @@ def config():
 		'password'      :config.get('GENERAL','password').strip(),
 		'serverurl'     :config.get('GENERAL','serverurl').strip(),
 		'useproxy'      :config.get('GENERAL','useproxy').strip(),
-		'proxyurl'      :config.get('GENERAL','serverurl').strip(),
+		'proxyurl'      :config.get('GENERAL','proxyurl').strip(),
 		'onlyonipchange':config.get('GENERAL','onlyonipchange').strip(),
 		'checkfile'     :config.get('GENERAL','checkfile').strip(),
 		# Additional tools
@@ -129,8 +129,11 @@ def config():
 		_print('     behind a proxy, installing handler ...')
 		scheme = CONFIG['proxyurl'].split(':')[0]
 		proxy  = urllib2.ProxyHandler({scheme: CONFIG['proxyurl']})
-		auth   = urllib2.HTTPBasicAuthHandler()
-		opener = urllib2.build_opener(proxy, auth, urllib2.HTTPHandler)
+		if '@' in CONFIG['proxyurl']:
+			auth   = urllib2.HTTPBasicAuthHandler()
+			opener = urllib2.build_opener(proxy, auth, urllib2.HTTPHandler)
+		else:
+			opener = urllib2.build_opener(proxy)
 		urllib2.install_opener(opener)
 
 def current_network_connections():
