@@ -28,7 +28,7 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10-b2'
+PROGRAMVERSION = '0.0.10-b3'
 URL = 'https://github.com/BoboTiG/pombo'
 UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 VCVERSION = '0.9.5'
@@ -99,6 +99,8 @@ def config():
 		'gpgkeyid'      :config.get('GENERAL','gpgkeyid').strip(),
 		'password'      :config.get('GENERAL','password').strip(),
 		'serverurl'     :config.get('GENERAL','serverurl').strip(),
+		'useproxy'      :config.get('GENERAL','useproxy').strip(),
+		'proxyurl'      :config.get('GENERAL','serverurl').strip(),
 		'onlyonipchange':config.get('GENERAL','onlyonipchange').strip(),
 		'checkfile'     :config.get('GENERAL','checkfile').strip(),
 		# Additional tools
@@ -112,12 +114,24 @@ def config():
 	}
 	if CONFIG['serverurl'] == '':
 		print ' ! Config file error: please specifiy at least one server for "serverurl" parameter.'
+	if CONFIG['useproxy'] != 'True' and CONFIG['useproxy'] != 'False':
+		_print(' ! Config file error: wrong "useproxy" parameter, should be True or False.')
+		_print('   Assuming False.')
+		CONFIG['useproxy'] = 'False'
 	if CONFIG['onlyonipchange'] != 'True' and CONFIG['onlyonipchange'] != 'False':
 		_print(' ! Config file error: wrong "onlyonipchange" parameter, should be True or False.')
 		_print('   Assuming False.')
 		CONFIG['onlyonipchange'] = 'False'
 	if OS == 'GNULINUX':
 		CONFIG['camshot_filetype'] = config.get(OS,'camshot_filetype').strip()
+	# Proxy
+	if CONFIG['useproxy'] == 'True':
+		_print('     behind a proxy, installing handler ...')
+		scheme = CONFIG['proxyurl'].split(':')[0]
+		proxy  = urllib2.ProxyHandler({scheme: CONFIG['proxyurl']})
+		auth   = urllib2.HTTPBasicAuthHandler()
+		opener = urllib2.build_opener(proxy, auth, urllib2.HTTPHandler)
+		urllib2.install_opener(opener)
 
 def current_network_connections():
 	''' Returns the addresses and ports to which this computer is 
