@@ -28,7 +28,7 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10-b1'
+PROGRAMVERSION = '0.0.10-b2'
 URL = 'https://github.com/BoboTiG/pombo'
 UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 VCVERSION = '0.9.5'
@@ -278,21 +278,25 @@ def snapshot(stolen):
 		_print(' - Computer does not seem to be connected to the internet. Aborting.' + CLRF)
 		return
 
-	if not stolen and CONFIG['onlyonipchange'] == 'True':
-		# Read previous IP
-		if not os.path.isfile(IPFILE):
-			_print(' + First run, writing down IP in pombo.')
-			f = open(IPFILE, 'w+b')
-			f.write(ip_hash(PUBLIC_IP))
-			f.close()
+	if not stolen:
+		if CONFIG['onlyonipchange'] == 'True':
+			# Read previous IP
+			if not os.path.isfile(IPFILE):
+				_print(' + First run, writing down IP in pombo.')
+				f = open(IPFILE, 'w+b')
+				f.write(ip_hash(PUBLIC_IP))
+				f.close()
+			else:
+				f = open(IPFILE, 'rb')
+				previous_ips = f.readlines()
+				f.close()
+				if ip_hash(PUBLIC_IP) in [s.strip() for s in previous_ips]:
+					_print(' - IP has not changed. Aborting.' + CLRF)
+					return
+				_print(' + IP has changed.')
 		else:
-			f = open(IPFILE, 'rb')
-			previous_ips = f.readlines()
-			f.close()
-			if ip_hash(PUBLIC_IP) in [s.strip() for s in previous_ips]:
-				_print(' - IP has not changed. Aborting.' + CLRF)
-				return
-			_print(' + IP has changed.')
+			_print(' - Computer not stolen and IP did not change, skipping report.' + CLRF)
+			return
 
 	# Create the system report (IP, date/hour...)
 	_print(' - Filename: %s' % FILENAME)
@@ -595,6 +599,6 @@ try:
 			pombo_work()
 		F.close()
 except (KeyboardInterrupt, SystemExit):
-	_print('*** STOPPING operations ***')
+	_print('*** STOPPING operations ***' + CLRF)
 	F.close()
 	sys.exit(1)

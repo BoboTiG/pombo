@@ -12,10 +12,11 @@
 
 *** GNU/Linux
 	- python
+	- python-ipy
 	- GnuPG
 	- iw
 	- traceroute
 	- scrot
 	- streamer
 	All of these tools should be into your repositories:
-		Debian based: aptitude install python gnupg net-tools iw traceroute scrot streamer
+		Debian based: aptitude install python python-ipy gnupg net-tools iw traceroute scrot streamer
