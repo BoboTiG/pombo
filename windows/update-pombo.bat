@@ -1,5 +1,5 @@
 @echo off
-C:\pombo\python\python.exe C:\pombo\pombo.py update
+python\python.exe pombo.py update
 echo.
 echo.
 cmd

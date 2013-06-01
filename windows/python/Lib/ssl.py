@@ -81,8 +81,9 @@ _PROTOCOL_NAMES = {
 }
 try:
     from _ssl import PROTOCOL_SSLv2
+    _SSLv2_IF_EXISTS = PROTOCOL_SSLv2
 except ImportError:
-    pass
+    _SSLv2_IF_EXISTS = None
 else:
     _PROTOCOL_NAMES[PROTOCOL_SSLv2] = "SSLv2"
 
@@ -90,6 +91,11 @@ from socket import socket, _fileobject, _delegate_methods, error as socket_error
 from socket import getnameinfo as _getnameinfo
 import base64        # for DER-to-PEM translation
 import errno
+
+# Disable weak or insecure ciphers by default
+# (OpenSSL's default setting is 'DEFAULT:!aNULL:!eNULL')
+_DEFAULT_CIPHERS = 'DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2'
+
 
 class SSLSocket(socket):
 
@@ -111,6 +117,9 @@ class SSLSocket(socket):
                 delattr(self, attr)
             except AttributeError:
                 pass
+
+        if ciphers is None and ssl_version != _SSLv2_IF_EXISTS:
+            ciphers = _DEFAULT_CIPHERS
 
         if certfile and not keyfile:
             keyfile = certfile
@@ -304,17 +313,19 @@ class SSLSocket(socket):
                                     self.cert_reqs, self.ssl_version,
                                     self.ca_certs, self.ciphers)
         try:
-            socket.connect(self, addr)
-            if self.do_handshake_on_connect:
-                self.do_handshake()
-        except socket_error as e:
             if return_errno:
-                return e.errno
+                rc = socket.connect_ex(self, addr)
             else:
-                self._sslobj = None
-                raise e
-        self._connected = True
-        return 0
+                rc = None
+                socket.connect(self, addr)
+            if not rc:
+                if self.do_handshake_on_connect:
+                    self.do_handshake()
+                self._connected = True
+            return rc
+        except socket_error:
+            self._sslobj = None
+            raise
 
     def connect(self, addr):
         """Connects to remote ADDR, and then wraps the connection in
@@ -333,17 +344,21 @@ class SSLSocket(socket):
         SSL channel, and the address of the remote client."""
 
         newsock, addr = socket.accept(self)
-        return (SSLSocket(newsock,
-                          keyfile=self.keyfile,
-                          certfile=self.certfile,
-                          server_side=True,
-                          cert_reqs=self.cert_reqs,
-                          ssl_version=self.ssl_version,
-                          ca_certs=self.ca_certs,
-                          ciphers=self.ciphers,
-                          do_handshake_on_connect=self.do_handshake_on_connect,
-                          suppress_ragged_eofs=self.suppress_ragged_eofs),
-                addr)
+        try:
+            return (SSLSocket(newsock,
+                              keyfile=self.keyfile,
+                              certfile=self.certfile,
+                              server_side=True,
+                              cert_reqs=self.cert_reqs,
+                              ssl_version=self.ssl_version,
+                              ca_certs=self.ca_certs,
+                              ciphers=self.ciphers,
+                              do_handshake_on_connect=self.do_handshake_on_connect,
+                              suppress_ragged_eofs=self.suppress_ragged_eofs),
+                    addr)
+        except socket_error as e:
+            newsock.close()
+            raise e
 
     def makefile(self, mode='r', bufsize=-1):
 

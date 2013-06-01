@@ -25,7 +25,8 @@ except ImportError:
 __all__ = ["copyfileobj", "copyfile", "copymode", "copystat", "copy", "copy2",
            "copytree", "move", "rmtree", "Error", "SpecialFileError",
            "ExecError", "make_archive", "get_archive_formats",
-           "register_archive_format", "unregister_archive_format"]
+           "register_archive_format", "unregister_archive_format",
+           "ignore_patterns"]
 
 class Error(EnvironmentError):
     pass
@@ -101,8 +102,10 @@ def copystat(src, dst):
         try:
             os.chflags(dst, st.st_flags)
         except OSError, why:
-            if (not hasattr(errno, 'EOPNOTSUPP') or
-                why.errno != errno.EOPNOTSUPP):
+            for err in 'EOPNOTSUPP', 'ENOTSUP':
+                if hasattr(errno, err) and why.errno == getattr(errno, err):
+                    break
+            else:
                 raise
 
 def copy(src, dst):
@@ -200,7 +203,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
             # Copying file access times may fail on Windows
             pass
         else:
-            errors.extend((src, dst, str(why)))
+            errors.append((src, dst, str(why)))
     if errors:
         raise Error, errors
 
@@ -359,7 +362,8 @@ def _make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
     archive_dir = os.path.dirname(archive_name)
 
     if not os.path.exists(archive_dir):
-        logger.info("creating %s" % archive_dir)
+        if logger is not None:
+            logger.info("creating %s", archive_dir)
         if not dry_run:
             os.makedirs(archive_dir)
 

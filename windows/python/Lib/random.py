@@ -427,11 +427,9 @@ class Random(_random.Random):
         # lambd: rate lambd = 1/mean
         # ('lambda' is a Python reserved word)
 
-        random = self.random
-        u = random()
-        while u <= 1e-7:
-            u = random()
-        return -_log(u)/lambd
+        # we use 1-random() instead of random() to preclude the
+        # possibility of taking the log of zero.
+        return -_log(1.0 - self.random())/lambd
 
 ## -------------------- von Mises distribution --------------------
 
@@ -459,27 +457,25 @@ class Random(_random.Random):
         if kappa <= 1e-6:
             return TWOPI * random()
 
-        a = 1.0 + _sqrt(1.0 + 4.0 * kappa * kappa)
-        b = (a - _sqrt(2.0 * a))/(2.0 * kappa)
-        r = (1.0 + b * b)/(2.0 * b)
+        s = 0.5 / kappa
+        r = s + _sqrt(1.0 + s * s)
 
         while 1:
             u1 = random()
-
             z = _cos(_pi * u1)
-            f = (1.0 + r * z)/(r + z)
-            c = kappa * (r - f)
 
+            d = z / (r + z)
             u2 = random()
-
-            if u2 < c * (2.0 - c) or u2 <= c * _exp(1.0 - c):
+            if u2 < 1.0 - d * d or u2 <= (1.0 - d) * _exp(d):
                 break
 
+        q = 1.0 / r
+        f = (q + z) / (1.0 + q * z)
         u3 = random()
         if u3 > 0.5:
-            theta = (mu % TWOPI) + _acos(f)
+            theta = (mu + _acos(f)) % TWOPI
         else:
-            theta = (mu % TWOPI) - _acos(f)
+            theta = (mu - _acos(f)) % TWOPI
 
         return theta
 

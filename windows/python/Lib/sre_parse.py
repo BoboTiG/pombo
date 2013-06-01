@@ -15,6 +15,7 @@
 import sys
 
 from sre_constants import *
+from _sre import MAXREPEAT
 
 SPECIAL_CHARS = ".\\[{()*+?^$|"
 REPEAT_CHARS = "*+?{"
@@ -228,7 +229,7 @@ def _class_escape(source, escape):
     if code:
         return code
     code = CATEGORIES.get(escape)
-    if code:
+    if code and code[0] == IN:
         return code
     try:
         c = escape[1:2]
@@ -498,10 +499,14 @@ def _parse(source, state):
                     continue
                 if lo:
                     min = int(lo)
+                    if min >= MAXREPEAT:
+                        raise OverflowError("the repetition number is too large")
                 if hi:
                     max = int(hi)
-                if max < min:
-                    raise error, "bad repeat interval"
+                    if max >= MAXREPEAT:
+                        raise OverflowError("the repetition number is too large")
+                    if max < min:
+                        raise error("bad repeat interval")
             else:
                 raise error, "not supported"
             # figure out which item to repeat
@@ -541,8 +546,11 @@ def _parse(source, state):
                                 break
                             name = name + char
                         group = 1
+                        if not name:
+                            raise error("missing group name")
                         if not isname(name):
-                            raise error, "bad character in group name"
+                            raise error("bad character in group name %r" %
+                                        name)
                     elif sourcematch("="):
                         # named backreference
                         name = ""
@@ -553,8 +561,11 @@ def _parse(source, state):
                             if char == ")":
                                 break
                             name = name + char
+                        if not name:
+                            raise error("missing group name")
                         if not isname(name):
-                            raise error, "bad character in group name"
+                            raise error("bad character in backref group name "
+                                        "%r" % name)
                         gid = state.groupdict.get(name)
                         if gid is None:
                             raise error, "unknown group name"
@@ -605,6 +616,8 @@ def _parse(source, state):
                             break
                         condname = condname + char
                     group = 2
+                    if not condname:
+                        raise error("missing group name")
                     if isname(condname):
                         condgroup = state.groupdict.get(condname)
                         if condgroup is None:
@@ -723,7 +736,7 @@ def parse_template(source, pattern):
                             break
                         name = name + char
                 if not name:
-                    raise error, "bad group name"
+                    raise error, "missing group name"
                 try:
                     index = int(name)
                     if index < 0:

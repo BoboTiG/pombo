@@ -1,5 +1,5 @@
 @echo off
-C:\pombo\python\python.exe C:\pombo\pombo.py check
+python\python.exe pombo.py check
 echo.
 echo.
 cmd

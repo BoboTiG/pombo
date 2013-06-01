@@ -3,8 +3,8 @@
 
 # Pombo
 # Theft-recovery tracking opensource software
+# http://bobotig.fr/?c=projets/pombo
 # http://sebsauvage.net/pombo
-# http://bobotig.fr/contenu/projets/pombo
 
 # This program is distributed under the OSI-certified zlib/libpnglicense .
 # http://www.opensource.org/licenses/zlib-license.php
@@ -28,13 +28,17 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10-b3'
+PROGRAMVERSION = '0.0.10'
 URL = 'https://github.com/BoboTiG/pombo'
 UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 VCVERSION = '0.9.5'
 
-import base64,ConfigParser,datetime,hashlib,hmac,locale,os,platform,\
-       re,subprocess,sys,tempfile,time,urllib,urllib2,zipfile
+import base64,datetime,hashlib,hmac,locale,logging,os,platform,\
+       re,requests,subprocess,sys,tempfile,time,zipfile
+if sys.version > '3':
+	import configparser as ConfigParser
+else:
+	import ConfigParser
 from IPy import IP
 
 
@@ -43,112 +47,112 @@ from IPy import IP
 # ----------------------------------------------------------------------
 
 # Current running OS specifities
-OS      = 'GNULINUX'
+OS      = 'Gnulinux'
 SEP     = '/'
 CONF    = '/etc/pombo.conf'
 IPFILE  = '/var/local/pombo'
 LOGFILE = '/var/log/pombo.log'
-CLRF    = "\n"
 if os.name == 'nt':
 	os.chdir(sys.path[0])
-	OS      = 'WINDOWS'
+	OS      = 'Windows'
 	SEP     = '\\'
 	CONF    = 'pombo.conf'
 	IPFILE  = 'pombo'
-	LOGFILE = 'pombo.log'
-	CLRF    = "\r\n"
+	LOGFILE = tempfile.gettempdir() + '\pombo.log'
 
 # Console encoding
 encoding = sys.stdin.encoding or locale.getdefaultlocale()[1]
 if not encoding:
 	encoding = 'utf-8'
 
-# Output - managed by "check" argument
-DEBUG = False
-# Development help
-LOG = True # Enable logging
-DEBUGERR = True # Print serr too
+# Informations logging
+LOG = logging.getLogger()
+LOG.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
+# Log to file
+file_handler = logging.FileHandler(LOGFILE, 'a')
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(formatter)
+LOG.addHandler(file_handler)
+# Log to console
+steam_handler = logging.StreamHandler()
+steam_handler.setLevel(logging.DEBUG)
+LOG.addHandler(steam_handler)
 
 # Get the configuration options
 if not os.access(CONF, os.R_OK):
-	print ' ! Impossible to read the config file.'
+	print(' ! Impossible to read the config file.')
 	sys.exit(1)
 CONFIG = {}
 
-# Timeout for all URL requests
-TIMEOUT = 60
+# Proxies
+dProxies = {}
 
 # Others
 TMP = tempfile.gettempdir()
-PUBLIC_IP = FILENAME = T = None
+PUBLIC_IP = None
+FILENAME  = None
 
 
 # ----------------------------------------------------------------------
 # --- [ Functions ] ----------------------------------------------------
 # ----------------------------------------------------------------------
 
+def to_bool(value = ''):
+	''' Return a boolean of a given string '''
+	return str(value).lower() in {'true','oui','yes','1'}
+
 def config():
 	''' Get configuration from CONF file '''
-	config = ConfigParser.SafeConfigParser()
-	config.read(CONF)
+	global CONFIG, LOG
+	LOG.info('Loading configuration')
+	try:
+		config = ConfigParser.SafeConfigParser()
+		config.read(CONF)
+		CONFIG = config._sections
+		CONFIG['General']['use_proxy'] = to_bool(CONFIG['General']['use_proxy'])
+		CONFIG['General']['use_env'] = to_bool(CONFIG['General']['use_env'])
+		CONFIG['General']['onlyonipchange'] = to_bool(CONFIG['General']['onlyonipchange'])
+		CONFIG['General']['enable_log'] = to_bool(CONFIG['General']['enable_log'])
+		CONFIG['General']['time_limit'] = int(CONFIG['General']['time_limit'])
+	except Exception as ex:
+		LOG.error(ex)
 	
-	_print(' - Loading configuration.')
-	global CONFIG
-	CONFIG = {
-		# Pombo related
-		'gpgkeyid'      :config.get('GENERAL','gpgkeyid').strip(),
-		'password'      :config.get('GENERAL','password').strip(),
-		'serverurl'     :config.get('GENERAL','serverurl').strip(),
-		'useproxy'      :config.get('GENERAL','useproxy').strip(),
-		'proxyurl'      :config.get('GENERAL','proxyurl').strip(),
-		'onlyonipchange':config.get('GENERAL','onlyonipchange').strip(),
-		'checkfile'     :config.get('GENERAL','checkfile').strip(),
-		# Additional tools
-		'network_config'    :config.get(OS,'network_config').strip(),
-		'wifi_access_points':config.get(OS,'wifi_access_points').strip(),
-		'traceroute'        :config.get(OS,'traceroute').strip(),
-		'network_trafic'    :config.get(OS,'network_trafic').strip(),
-		'screenshot'        :config.get(OS,'screenshot').strip(),
-		'camshot'           :config.get(OS,'camshot').strip(),
-		'camshot_filetype'  :''
-	}
-	if CONFIG['serverurl'] == '':
-		print ' ! Config file error: please specifiy at least one server for "serverurl" parameter.'
-	if CONFIG['useproxy'] != 'True' and CONFIG['useproxy'] != 'False':
-		_print(' ! Config file error: wrong "useproxy" parameter, should be True or False.')
-		_print('   Assuming False.')
-		CONFIG['useproxy'] = 'False'
-	if CONFIG['onlyonipchange'] != 'True' and CONFIG['onlyonipchange'] != 'False':
-		_print(' ! Config file error: wrong "onlyonipchange" parameter, should be True or False.')
-		_print('   Assuming False.')
-		CONFIG['onlyonipchange'] = 'False'
-	if OS == 'GNULINUX':
-		CONFIG['camshot_filetype'] = config.get(OS,'camshot_filetype').strip()
+	if not CONFIG['General']['serverurl']:
+		LOG.error('Please specifiy at least one server for "serverurl" parameter.')
+		sys.exit(1)
+	
 	# Proxy
-	if CONFIG['useproxy'] == 'True':
-		_print('     behind a proxy, installing handler ...')
-		scheme = CONFIG['proxyurl'].split(':')[0]
-		proxy  = urllib2.ProxyHandler({scheme: CONFIG['proxyurl']})
-		if '@' in CONFIG['proxyurl']:
-			auth   = urllib2.HTTPBasicAuthHandler()
-			opener = urllib2.build_opener(proxy, auth, urllib2.HTTPHandler)
+	if CONFIG['General']['use_proxy']:
+		if CONFIG['General']['use_env']:
+			if os.getenv('http_proxy') != None:
+				dProxies['http'] = os.getenv('http_proxy')
+			if os.getenv('https_proxy') != None:
+				dProxies['https'] = os.getenv('https_proxy')
 		else:
-			opener = urllib2.build_opener(proxy)
-		urllib2.install_opener(opener)
+			if CONFIG['General']['http_proxy'] != '':
+				dProxies['http'] = CONFIG['http_proxy']
+			if CONFIG['General']['https_proxy'] != '':
+				dProxies['https'] = CONFIG['https_proxy']
+	
+	# Informations logging
+	if not CONFIG['General']['enable_log']:
+		LOG.info('Disabling logger')
+		LOG.handlers = []
 
 def current_network_connections():
 	''' Returns the addresses and ports to which this computer is 
 	    currently connected to. '''
-	if CONFIG['network_trafic'] == 'False':
+	if not CONFIG['Commands']['network_trafic']:
 		return 'Disabled.'
-	return runprocess(CONFIG['network_trafic'].split(' '))
+	return runprocess(CONFIG['Commands']['network_trafic'].split(' '))
 
 def currentuser():
 	''' Return the user who is currently logged in and uses the X 
 	    session. None if could not be determined.
 	'''
 	user = None
-	if OS == 'WINDOWS':
+	if OS == 'Windows':
 		user = runprocess(['echo', '%USERNAME%'], useshell=True)
 	else:
 		for line in runprocess(['who','-s'], useshell=True).split('\n'):
@@ -158,60 +162,68 @@ def currentuser():
 					break
 	return user
 
-def file_size(file):
+def file_size(filename):
 	''' Get file to send size '''
-	num = os.path.getsize(file)
+	num = os.path.getsize(filename)
 	for x in ['B','KB','MB','GB']:
 		if num < 1024.0 and num > -1024.0:
 			return '%3.1f%s' % (num, x)
 		num /= 1024.0
 	return '%3.1f%s' % (num, 'TB')
 
-def ip_hash(ip):
+def hash_string(ip):
 	''' IP hash methods - could be easily modifed. '''
-	return hashlib.sha256(ip.strip()).hexdigest()
+	return hashlib.sha256(ip.encode()).hexdigest()
 
 def network_config():
 	''' Returns the network configuration, both wired and wireless '''
-	if CONFIG['network_config'] == 'False':
+	if not CONFIG['Commands']['network_config']:
 		return 'Disabled.'
-	return runprocess(CONFIG['network_config'].split(' '))
+	return runprocess(CONFIG['Commands']['network_config'].split(' '))
 
 def network_route():
 	''' Returns a traceroute to a public server in order to detect ISPs
 	    and nearby routeurs.
 	'''
-	if CONFIG['traceroute'] == 'False':
+	if not CONFIG['Commands']['traceroute']:
 		return 'Disabled.'
-	return runprocess(CONFIG['traceroute'].split(' '))
-
-def _print(string):
-	string = '%s %s' % (datetime.datetime.now(), string)
-	if DEBUG:
-		print string
-	if LOG:
-		F.write(string + CLRF)
+	return runprocess(CONFIG['Commands']['traceroute'].split(' '))
 
 def public_ip():
 	''' Returns your public IP address.
 		Output: The IP address in string format.
 				None if not internet connection is available.
 	'''
-	_print(' - Retrieving IP address ... ')
-	for distant in CONFIG['serverurl'].split(','):
-		domain = distant.split('/')[2]
-		_print('     from %s' % domain)
+	for distant in CONFIG['General']['serverurl'].split('|'):
 		try:
-			request = urllib2.Request(distant + '?' + urllib.urlencode({'myip':'1'}))
-			response = urllib2.urlopen(request, timeout=TIMEOUT)
-			ip = response.read(256)
+			LOG.info('Retrieving IP address from %s', distant.split('/')[2])
+			ip = request_url(distant, 'get', {'myip':'1'})
 			IP(ip)
 			return ip
 		except Exception as ex:
-			_print('       ! failed: %s' % ex)
+			LOG.warn(ex)
 	return None
 
-def runprocess(commandline,useshell=False):
+def request_url(url, method = 'get', params = {}):
+	''' Make a request with all options "aux petits oignons" '''
+	ret = str('')
+	ssl_cert_verif = url.split(':') == 'https'
+	auth = ()
+	
+	if CONFIG['General']['auth_server'] == url.split('/')[2]:
+		auth = (CONFIG['General']['auth_user'], CONFIG['General']['auth_pswd'])
+	try:
+		if method == 'get':
+			req = requests.get(url, params=params, proxies=dProxies, verify=ssl_cert_verif, auth=auth)
+		else:
+			req = requests.post(url, data=params, proxies=dProxies, verify=ssl_cert_verif, auth=auth)
+		ret = req.content.strip().decode()
+	except Exception as ex:
+		LOG.warn(ex)
+	LOG.debug('Content: %s', ret)
+	return ret
+
+def runprocess(commandline, useshell = False):
 	''' Runs a sub-process, wait for termination and returns
 		the process output (both stdout and stderr, concatenated).
 
@@ -240,35 +252,42 @@ def runprocess(commandline,useshell=False):
 		if not serr:
 			serr = ''
 		else:
-			if DEBUGERR:
-				_print("serr = %s" % serr)
-		return unicode(sout, encoding).encode('utf-8') + "\n" + unicode(serr, encoding).encode('utf-8')
-	except Exception as ex:  # Yeah, I know this is bad
-		_print(' ! Process failed: %s (%s)' % (commandline, ex))
+			LOG.error(serr)
+		if sys.version > '3':
+			return str(''.join(map(chr, sout)) + "\n" + ''.join(map(chr, serr)))
+		else:
+			return unicode(sout, encoding).encode('utf-8') + "\n" + unicode(serr, encoding).encode('utf-8')
+	except Exception as ex:
+		LOG.error('Process failed: %s (%s)', commandline, ex)
 		return ''
 
 def screenshot():
 	''' Takes a screenshot and returns the path to the saved image 
 	    (in TMP). None if could not take the screenshot. 
 	'''
-	if CONFIG['screenshot'] == 'False':
-		_print(' . Skipping screenshot.')
+	if not CONFIG['Commands']['screenshot']:
+		LOG.info('Skipping screenshot.')
 		return None
 
-	_print(' - Taking screenshot.')
+	LOG.info('Taking screenshot')
 	filepath = '%s%c%s_screenshot.jpg' % (TMP, SEP, FILENAME)
 	user = currentuser()
 	if not user:
-		_print(' ! Could not determine current user. Cannot take screenshot.')
+		LOG.error('Could not determine current user. Cannot take screenshot.')
 		return None
 
-	if OS == 'WINDOWS':
-		from PIL import Image,ImageGrab
-		img = ImageGrab.grab(Image.WEB) 
-		img.save(filepath, 'JPEG', quality=50)
-	else:
-		cmd = CONFIG['screenshot'] % (user, filepath)
-		runprocess(cmd, useshell=True)
+	try:
+		if OS == 'Windows':
+			from PIL import Image,ImageGrab
+			img = ImageGrab.grab(Image.WEB) 
+			img.save(filepath, 'JPEG', quality=80)
+		else:
+			cmd = CONFIG['Commands']['screenshot']
+			cmd = cmd.replace('<user>', user)
+			cmd = cmd.replace('<filepath>', filepath)
+			runprocess(cmd, useshell=True)
+	except Exception as ex:
+		LOG.error(ex)
 	if not os.path.isfile(filepath):
 		return None
 	return filepath
@@ -283,7 +302,7 @@ def snapshot(stolen):
 	# If a particular snapshot fails, it will simply skip it.
 
 	# Initialisations
-	global PUBLIC_IP, FILENAME, T
+	global PUBLIC_IP, FILENAME
 	FILENAME = platform.node() + time.strftime('_%Y%m%d_%H%M%S')
 	PUBLIC_IP = public_ip()
 	filestozip = []
@@ -292,35 +311,41 @@ def snapshot(stolen):
 	# (If the computer has no connexion to the internet, it's no use 
 	# accumulating snapshots.)
 	if PUBLIC_IP is None:
-		_print(' - Computer does not seem to be connected to the internet. Aborting.' + CLRF)
+		LOG.error('Computer does not seem to be connected to the internet. Aborting.')
 		return
 
 	if not stolen:
-		if CONFIG['onlyonipchange'] == 'True':
+		if CONFIG['General']['onlyonipchange']:
 			# Read previous IP
 			if not os.path.isfile(IPFILE):
-				_print(' + First run, writing down IP in pombo.')
+				LOG.info('First run, writing down IP in pombo.')
 				f = open(IPFILE, 'w+b')
-				f.write(ip_hash(PUBLIC_IP))
+				if sys.version > '3':
+					f.write(bytes(hash_string(PUBLIC_IP), encoding))
+				else:
+					f.write(hash_string(PUBLIC_IP))
 				f.close()
 			else:
 				f = open(IPFILE, 'rb')
 				previous_ips = f.readlines()
 				f.close()
-				if ip_hash(PUBLIC_IP) in [s.strip() for s in previous_ips]:
-					_print(' - IP has not changed. Aborting.' + CLRF)
+				if hash_string(PUBLIC_IP) in [s.strip() for s in previous_ips]:
+					LOG.info('IP has not changed. Aborting.')
 					return
-				_print(' + IP has changed.')
+				LOG.warn('IP has changed.')
 		else:
-			_print(' - Computer not stolen and IP did not change, skipping report.' + CLRF)
+			LOG.info('Computer not stolen and IP did not change, skipping report.')
 			return
 
 	# Create the system report (IP, date/hour...)
-	_print(' - Filename: %s' % FILENAME)
-	_print(' - Collecting system info.')
+	LOG.info('Filename: %s', FILENAME)
+	LOG.info('Collecting system info')
 	filepath = '%s%c%s.txt' % (TMP, SEP, FILENAME)
 	f = open(filepath, 'ab')
-	f.write(systemreport())
+	if sys.version > '3':
+		f.write(bytes(systemreport(), encoding))
+	else:
+		f.write(systemreport())
 	f.close()
 	filestozip.append(filepath)
 
@@ -335,25 +360,32 @@ def snapshot(stolen):
 		filestozip.append(webcam)
 
 	# Zip files:
-	_print(' - Zipping files.')
-	os.chdir(TMP)
-	zipfilepath = '%s%c%s.zip' % (TMP, SEP, FILENAME)
-	f = zipfile.ZipFile(zipfilepath, 'w', zipfile.ZIP_DEFLATED)
-	for filepath in filestozip:
-		f.write(os.path.basename(filepath))
-	f.close()
+	LOG.info('Zipping files')
+	try:
+		os.chdir(TMP)
+		zipfilepath = '%s%c%s.zip' % (TMP, SEP, FILENAME)
+		f = zipfile.ZipFile(zipfilepath, 'w', zipfile.ZIP_DEFLATED)
+		for filepath in filestozip:
+			f.write(os.path.basename(filepath))
+		f.close()
+	except Exception as ex:
+		LOG.error(ex)
 
 	# Remove temporary files.
 	for filepath in filestozip:
 		os.remove(filepath)
 
 	# Encrypt using gpg with a specified public key
-	_print(' - Encrypting zip with GnuPG.')
-	runprocess(['gpg', '--batch', '--no-default-keyring', '--trust-model', 'always', '-r', CONFIG['gpgkeyid'], '-e', zipfilepath])
-	os.remove(zipfilepath)
-	gpgfilepath = zipfilepath + '.gpg'
-	if not os.path.isfile(gpgfilepath):
-		_print(' ! GPG encryption failed. Aborting.' + CLRF)
+	LOG.info('Encrypting zip with GnuPG')
+	try:
+		runprocess(['gpg', '--batch', '--no-default-keyring', '--trust-model', 'always', '-r', CONFIG['General']['gpgkeyid'], '-e', zipfilepath])
+		os.remove(zipfilepath)
+		gpgfilepath = zipfilepath + '.gpg'
+		if not os.path.isfile(gpgfilepath):
+			LOG.error('GPG encryption failed. Aborting.')
+			return
+	except Exception as ex:
+		LOG.error(ex)
 		return
 
 	# Read GPG file and compute authentication token
@@ -363,114 +395,115 @@ def snapshot(stolen):
 	filesize = file_size(gpgfilepath)
 	os.remove(gpgfilepath)
 	gpgfilename = os.path.basename(gpgfilepath)
-	authtoken = hmac.new(CONFIG['password'], filedata + '***' + gpgfilename, hashlib.sha1).hexdigest()
+	key = CONFIG['General']['password']
+	if sys.version > '3':
+		key = key.encode()
+		msg = str(filedata.decode()) + '***' + gpgfilename
+		msg = msg.encode()
+	else:
+		msg = filedata + '***' + gpgfilename
+	authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
 
 	# Send to the webserver (HTTP POST).
-	_print(' - Sending file (%s) ... ' % filesize)
-	for distant in CONFIG['serverurl'].split(','):
-		domain = distant.split('/')[2]
-		_print('     to %s' % (domain))
-		parameters = {'filename':gpgfilename, 'filedata':filedata, 'token':authtoken}
+	parameters = {'filename':gpgfilename, 'filedata':filedata, 'token':authtoken}
+	for distant in CONFIG['General']['serverurl'].split('|'):
+		LOG.info('Sending file (%s) to %s', filesize, distant.split('/')[2])
 		try:
-			request = urllib2.Request(distant, urllib.urlencode(parameters))
-			response = urllib2.urlopen(request, timeout=TIMEOUT)
-			page = response.read(2000)
-			_print('       > %s' % page.strip())
+			request_url(distant, 'post', parameters)
 		except Exception as ex:
-			_print('       ! failed: %s' % ex)
+			LOG.warn(ex)
 			pass
-	_print(' ^ Done.' + CLRF)
 	return
 
 def stolen():
 	''' Returns True is the computer was stolen. '''
-	# Initialisations
-	global T
-	T = time.time()
 	salt = 'just check if I am a stolen one'
-	authtoken = hmac.new(CONFIG['password'], salt + '***' + CONFIG['checkfile'], 
-						 hashlib.sha1).hexdigest()
-	_print('<> Checking status ... ')
-	for distant in CONFIG['serverurl'].split(','):
-		domain = distant.split('/')[2]
-		_print('     on %s' % domain)
-		parameters = {'filename':CONFIG['checkfile'], 'filedata':salt, 'verify':authtoken}
+	key = CONFIG['General']['password']
+	msg = salt + '***' + CONFIG['General']['checkfile']
+	if sys.version > '3':
+		key = key.encode()
+		msg = msg.encode()
+	authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
+	parameters = {'filename':CONFIG['General']['checkfile'], 'filedata':salt, 'verify':authtoken}
+	for distant in CONFIG['General']['serverurl'].split('|'):
+		LOG.info('Checking status on %s', distant.split('/')[2])
 		try:
-			request = urllib2.Request(distant, urllib.urlencode(parameters))
-			response = urllib2.urlopen(request, timeout=TIMEOUT)
-			page = response.read(2000)
-			if page.strip() == '1':
-				_print('       <<!>> Stolen computer <<!>>')
+			if request_url(distant, 'post', parameters) == '1':
+				LOG.warn('<<!>> Stolen computer <<!>>')
 				return True
 		except Exception as ex:
-			_print('       ! failed: %s' % ex)
+			LOG.warn(ex)
 	return False
 
 def systemreport():
 	''' Returns a system report: computer name, date/time, public IP,
 		list of wired and wireless interfaces and their configuration, etc.
 	'''
-	report = ['%s %s report' % (PROGRAMNAME, PROGRAMVERSION)]
-	report.append('Computer : ' +  ' '.join(platform.uname()))
-	report.append('Public IP: %s ( Approximate geolocation: http://www.geoiptool.com/?IP=%s )' % (PUBLIC_IP, PUBLIC_IP))
-	report.append('Date/time: %s (local time)' % datetime.datetime.now())
-	report.append("Network config:\n" + network_config())
-	report.append("Nearby wireless access points:\n" + wifiaccesspoints())
-	report.append("Network routes:\n" + network_route())
-	report.append("Current network connections:\n" + current_network_connections())
 	separator = "\n" + 75 * "-" + "\n"
-	return separator.join(report)
+	v = sys.version_info;
+	LOG.debug('Using python %s.%s.%s' % (v.major, v.minor, v.micro))
+	report  = '%s %s report' % (PROGRAMNAME, PROGRAMVERSION) + separator
+	report += str('Computer : ' +  ' '.join(platform.uname())) + separator
+	report += str('Public IP: %s ( Approximate geolocation: http://www.geoiptool.com/?IP=%s )' % (PUBLIC_IP, PUBLIC_IP)) + separator
+	report += str('Date/time: %s (local time)' % datetime.datetime.now()) + separator
+	separator = "\n" + separator
+	LOG.debug('System report: network_config()')
+	report += str("Network config:\n" + network_config().strip()) + separator
+	LOG.debug('System report: wifiaccesspoints()')
+	report += str("Nearby wireless access points:\n" + wifiaccesspoints().strip()) + separator
+	LOG.debug('System report: network_route()')
+	report += str("Network routes:\n" + network_route().strip()) + separator
+	LOG.debug('System report: current_network_connections()')
+	report += str("Current network connections:\n" + current_network_connections().strip() + "\n")
+	if OS == 'Windows':
+		report = report.replace("\r\n", "\n")
+	return report
 
 def webcamshot():
 	''' Takes a snapshot with the webcam and returns the path to the 
 	    saved image (in TMP). None if could not take the snapshot. 
 	'''
-	if CONFIG['camshot'] == 'False':
-		_print(' . Skipping webcamshot.')
+	if not CONFIG['Commands']['camshot']:
+		LOG.info('Skipping webcamshot.')
 		return None
 
-	_print(' - Taking webcamshot.')
-	if OS == 'WINDOWS':
-		try:
+	LOG.info('Taking webcamshot')
+	try:
+		if OS == 'Windows':
 			filepath = '%s%c%s_webcam.jpg' % (TMP, SEP, FILENAME)
 			from VideoCapture import Device
 			cam = Device(devnum=0)
 			if not cam:
 				cam = Device(devnum=1)
 				if not cam:
-					_print(' ! Error while taking webcamshot: no device available.')
+					LOG.error('Error while taking webcamshot: no device available.')
 					return None
 			#cam.setResolution(768, 576) # Here you can modify the picture resolution
 			cam.getImage()
 			time.sleep(1)
 			cam.saveSnapshot(filepath)
-		except Exception as ex:
-			_print(' ! Error while taking webcamshot: %s' % ex[0])
-			return None
-	else:
-		filepath = '%s%c%s_webcam.%s' % (TMP, SEP, FILENAME, CONFIG['camshot_filetype'])
-		try:
-			cmd = CONFIG['camshot'] % filepath
+		else:
+			filepath = '%s%c%s_webcam.%s' % (TMP, SEP, FILENAME, CONFIG['Commands']['camshot_filetype'])
+			cmd = CONFIG['Commands']['camshot'].replace('<filepath>', filepath)
 			runprocess(cmd, useshell=True)
-		except Exception as ex:
-			_print(' ! Error while taking webcamshot: %s' % ex[0])
-			return None
-		if os.path.isfile(filepath):
-			if CONFIG['camshot_filetype'] == 'ppm':
-				new_filepath = '%s%c%s_webcam.jpg' % (TMP, SEP, FILENAME)
-				runprocess(['/usr/bin/convert', filepath, new_filepath])
-				os.unlink(filepath)
-				filepath = new_filepath
+			if os.path.isfile(filepath):
+				if CONFIG['Commands']['camshot_filetype'] == 'ppm':
+					new_filepath = '%s%c%s_webcam.jpg' % (TMP, SEP, FILENAME)
+					runprocess(['/usr/bin/convert', filepath, new_filepath])
+					os.unlink(filepath)
+					filepath = new_filepath
+	except Exception as ex:
+		LOG.error(ex)
+		return None
 	if not os.path.isfile(filepath):
 		return None
 	return filepath
 
 def wifiaccesspoints():
 	''' Returns a list of nearby wifi access points (AP). '''
-	if CONFIG['wifi_access_points'] == 'False':
+	if not CONFIG['Commands']['wifi_access_points']:
 		return 'Disabled.'
-	return runprocess(CONFIG['wifi_access_points'].split(' '))
-
+	return runprocess(CONFIG['Commands']['wifi_access_points'].split(' '))
 
 
 # ----------------------------------------------------------------------
@@ -481,7 +514,7 @@ def pombo_add():
 	config()
 	ip = public_ip()
 	if not ip:
-		print 'Computer does not seem to be connected to the internet. Aborting.'
+		print('Computer does not seem to be connected to the internet. Aborting.')
 	else:
 		known = False
 		if os.path.isfile(IPFILE):
@@ -489,103 +522,109 @@ def pombo_add():
 			f = open(IPFILE, 'rb')
 			previous_ips = f.readlines()
 			f.close()
-			if ip_hash(ip) in [s.strip() for s in previous_ips]:
-				print 'IP already known.'
+			if hash_string(ip) in [s.strip() for s in previous_ips]:
+				print('IP already known.')
 				known = True
 		if known is False:
-			print 'Adding current ip %s to %s.' % (ip, IPFILE)
+			print('Adding current ip %s to %s.' % (ip, IPFILE))
 			f = open(IPFILE, 'a+b')
-			f.write(ip_hash(ip) + "\n")
+			if sys.version > '3':
+				f.write(bytes(hash_string(ip) + "\n", encoding))
+			else:
+				f.write(hash_string(ip) + "\n")
 			f.close()
 
 def pombo_help():
-	print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
-	print 'Options ---'
-	print '   add      add the current IP to %s' % IPFILE
-	print '   check    launch Pombo in verbose mode'
-	print '   help     show this message'
-	print '   ip       show current IP'
-	print '   list     list known IP'
-	print '   update   check for update'
-	print '   version  show %s, python and versions' % PROGRAMNAME
+	print('Options ---')
+	print('   add      add the current IP to %s' % IPFILE)
+	print('   check    launch Pombo in verbose mode')
+	print('   help     show this message')
+	print('   ip       show current IP')
+	print('   list     list known IP')
+	print('   update   check for update')
+	print('   version  show %s, python and versions' % PROGRAMNAME)
 
 def pombo_ip():
 	config()
 	ip = public_ip()
 	if not ip:
-		print 'Computer does not seem to be connected to the internet. Aborting.'
+		print('Computer does not seem to be connected to the internet. Aborting.')
 	else:
-		print 'IP  : %s' % ip
-		iphash = ip_hash(ip)
-		print 'Hash: %s...%s' % (iphash[:20], iphash[-20:])
+		print('IP  : %s' % ip)
+		iphash = hash_string(ip)
+		print('Hash: %s...%s' % (iphash[:20], iphash[-20:]))
 
 def pombo_list():
 	if not os.path.isfile(IPFILE):
-		print '%s does not exist!' % IPFILE
+		print('%s does not exist!' % IPFILE)
 	else:
 		f = open(IPFILE, 'rb')
-		print 'IP hashes in %s:' % IPFILE
+		print('IP hashes in %s:' % IPFILE)
 		for s in f.readlines():
-			print '   %s...%s' % (s[:20], s.strip()[-20:])
+			print('   %s...%s' % (s[:20], s.strip()[-20:]))
 		f.close()
 
 def pombo_update():
-	print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
+	version = ''
 	try:
-		request = urllib2.Request(UPLINK)
-		response = urllib2.urlopen(request, timeout=TIMEOUT)
-		version = response.read(2000).strip()
-		if version != PROGRAMVERSION:
-			if re.match('^\d{1,}.\d{1}.\d{1,}$', version):
-				print ' + Yep! A new version is available: %s' % version
-				print ' - Check %s for upgrade.' % URL
-			elif re.match('^\d{1,}.\d{1}.\d{1,}-', version):
-				typever = 'Alpha'
-				if 'b' in version:
-					typever = 'Beta'
-				print ' - %s version available: %s' % (typever, version)
-				print ' . You should upgrade only for tests purpose!'
-				print ' - Check %s' % URL
-				print '   and report issues/ideas on GitHub or at bobotig (at) gmail (dot) com.'
-		else:
-			print 'Version is up to date!'
+		req = requests.get(UPLINK, verify=True)
+		version = req.content.strip().decode()
 	except Exception as ex:
-		print ' ! Arf, check failed: %s !' % ex
-		print ' . Please check later.'
+		print(' ! Arf, check failed: %s !' % ex)
+		print(' . Please check later.')
+	if version != PROGRAMVERSION:
+		if re.match('^\d{1,}.\d{1}.\d{1,}$', version):
+			print(' + Yep! A new version is available: %s' % version)
+			print(' - Check %s for upgrade.' % URL)
+		elif re.match('^\d{1,}.\d{1}.\d{1,}-', version):
+			typever = 'Alpha'
+			if 'b' in version:
+				typever = 'Beta'
+			print(' - %s version available: %s' % (typever, version))
+			print(' . You should upgrade only for tests purpose!')
+			print(' - Check %s' % URL)
+			print('   and report issues/ideas on GitHub or at bobotig (at) gmail (dot) com.')
+	else:
+		print('Version is up to date!')
 
 def pombo_version():
 	v = sys.version_info;
-	print '%s %s' % (PROGRAMNAME, PROGRAMVERSION)
-	print 'I am using python %s.%s.%s' % (v.major, v.minor, v.micro)
-	if OS == 'WINDOWS':
+	print('I am using python %s.%s.%s' % (v.major, v.minor, v.micro))
+	if OS == 'Windows':
 		from PIL import Image
-		print 'with VideoCapture %s' % VCVERSION
-		print '          and PIL %s' % Image.VERSION
+		print('with VideoCapture %s' % VCVERSION)
+		print('          and PIL %s' % Image.VERSION)
 
-def pombo_work(debug=False):
-	global DEBUG, F
-	DEBUG = debug
-	
-	_print('%s %s' % (PROGRAMNAME, PROGRAMVERSION))
+def pombo_work():
 	config()
-	if OS == 'WINDOWS':
+	if OS == 'Windows':
 		# Cron job like for Windows :s
 		while True:
+			wait_normal = 60 * CONFIG['General']['time_limit']
+			wait_stolen = wait_normal // 3
 			if stolen():
+				start = time.time()
 				snapshot(True)
-				time.sleep(300 - (time.time() - T)) # < 5 minutes
+				runtime = time.time() - start
+				time.sleep(wait_stolen - runtime)
 			else:
+				start = time.time()
 				snapshot(False)
-				time.sleep(900 - (time.time() - T)) # < 15 minutes
+				runtime = time.time() - start
+				time.sleep(wait_normal - runtime)
 	else:
 		if stolen():
+			wait = 60 * CONFIG['General']['time_limit'] // 3
 			for i in range(1, 4):
-				_print(' * Attempt %d/3 *' % i)
+				LOG.info('* Attempt %d/3 *', i)
+				start = time.time()
 				snapshot(True)
-				time.sleep(300 - (time.time() - T)) # < 5 minutes
+				runtime = time.time() - start
+				if i < 3:
+					time.sleep(wait - runtime)
 		else:
 			snapshot(False)
-	
+
 
 # ----------------------------------------------------------------------
 # --- [ C'est parti mon kiki ! ] ---------------------------------------
@@ -593,13 +632,13 @@ def pombo_work(debug=False):
 
 try:
 	if __name__ == '__main__':
-		F = open(LOGFILE, 'a+b')
+		LOG.info('%s %s', PROGRAMNAME, PROGRAMVERSION)
 		argv = sys.argv[1:]
 		if argv:
 			if 'add' in argv:
 				pombo_add()
 			elif 'check' in argv:
-				pombo_work(True)
+				pombo_work()
 			elif 'help' in argv:
 				pombo_help()
 			elif 'ip' in argv:
@@ -611,11 +650,13 @@ try:
 			elif 'version' in argv:
 				pombo_version()
 			else:
-				print 'Unknown argument - try "help".'
+				LOG.warn('Unknown argument "%s" - try "help".', argv)
 		else:
 			pombo_work()
-		F.close()
-except (KeyboardInterrupt, SystemExit):
-	_print('*** STOPPING operations ***' + CLRF)
-	F.close()
+			LOG.info('Session terminated.')
+except (KeyboardInterrupt):
+	LOG.warn('*** STOPPING operations ***')
 	sys.exit(1)
+except Exception as ex:
+	LOG.critical(ex)
+	raise

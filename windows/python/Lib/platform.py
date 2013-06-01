@@ -183,7 +183,7 @@ def libc_ver(executable=sys.executable,lib='',version='',
         elif so:
             if lib != 'glibc':
                 lib = 'libc'
-                if soversion > version:
+                if soversion and soversion > version:
                     version = soversion
                 if threads and version[-len(threads):] != threads:
                     version = version + threads
@@ -554,7 +554,7 @@ def win32_ver(release='',version='',csd='',ptype=''):
 
     """ Get additional version information from the Windows Registry
         and return a tuple (version,csd,ptype) referring to version
-        number, CSD level and OS type (multi/single
+        number, CSD level (service pack), and OS type (multi/single
         processor).
 
         As a hint: ptype returns 'Uniprocessor Free' on single
@@ -673,8 +673,13 @@ def win32_ver(release='',version='',csd='',ptype=''):
                     release = '7'
                 else:
                     release = '2008ServerR2'
+            elif min == 2:
+                if product_type == VER_NT_WORKSTATION:
+                    release = '8'
+                else:
+                    release = '2012Server'
             else:
-                release = 'post2008Server'
+                release = 'post2012Server'
 
     else:
         if not release:
@@ -765,6 +770,7 @@ def _mac_ver_gestalt():
                    0x2: 'PowerPC',
                    0xa: 'i386'}.get(sysa,'')
 
+    versioninfo=('', '', '')
     return release,versioninfo,machine
 
 def _mac_ver_xml():
@@ -1019,16 +1025,38 @@ def _syscmd_file(target,default=''):
         case the command should fail.
 
     """
+
+    # We do the import here to avoid a bootstrap issue.
+    # See c73b90b6dadd changeset.
+    #
+    # [..]
+    # ranlib libpython2.7.a
+    # gcc   -o python \
+    #        Modules/python.o \
+    #        libpython2.7.a -lsocket -lnsl -ldl    -lm
+    # Traceback (most recent call last):
+    #  File "./setup.py", line 8, in <module>
+    #    from platform import machine as platform_machine
+    #  File "[..]/build/Lib/platform.py", line 116, in <module>
+    #    import sys,string,os,re,subprocess
+    #  File "[..]/build/Lib/subprocess.py", line 429, in <module>
+    #    import select
+    # ImportError: No module named select
+
+    import subprocess
+
     if sys.platform in ('dos','win32','win16','os2'):
         # XXX Others too ?
         return default
-    target = _follow_symlinks(target).replace('"', '\\"')
+    target = _follow_symlinks(target)
     try:
-        f = os.popen('file "%s" 2> %s' % (target, DEV_NULL))
+        proc = subprocess.Popen(['file', target],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
     except (AttributeError,os.error):
         return default
-    output = string.strip(f.read())
-    rc = f.close()
+    output = proc.communicate()[0]
+    rc = proc.wait()
     if not output or rc:
         return default
     else:

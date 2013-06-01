@@ -18,7 +18,7 @@
    version="1.0"
    sodipodi:docname="pombo.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/mnt/stock/projets/pombo/pombo-git/icon/pombo.png"
+   inkscape:export-filename="/mnt/stock/projets/pombo/icon/pombo.png"
    inkscape:export-xdpi="9"
    inkscape:export-ydpi="9"
    enable-background="new">
@@ -152,7 +152,7 @@
        r="12.371145" />
   </defs>
   <sodipodi:namedview
-     inkscape:window-height="945"
+     inkscape:window-height="952"
      inkscape:window-width="1280"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0"
@@ -167,10 +167,10 @@
      height="500px"
      borderlayer="true"
      inkscape:zoom="1"
-     inkscape:cx="211.28117"
+     inkscape:cx="213.28117"
      inkscape:cy="257.41442"
      inkscape:window-x="0"
-     inkscape:window-y="27"
+     inkscape:window-y="25"
      inkscape:current-layer="layer2"
      inkscape:showpageshadow="false"
      fit-margin-top="2"

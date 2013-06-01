@@ -10,12 +10,16 @@
 ; dossier pombo-$version.
 #define MyAppSDir "C:\pombo-dev\"
 
+; Version présentent dans cet installeur
+#define PythonVersion "2.7.5"
+#define GnuPGVersion "1.4.13"
+
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{D24DCF9D-1F2E-4846-A4DF-0A41E13E4472}
-AppCopyright=Copyleft 2012 {#MyAppPublisher}
+AppCopyright=Copyleft 2012-2013 {#MyAppPublisher}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName}
@@ -41,29 +45,49 @@ UninstallDisplayName={#MyAppName} {#MyAppVersion}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 
+[Types]
+Name: "full"; Description: "Full installation"
+Name: "custom"; Description: "Custom installation"; Flags: iscustom
+
+[Components]
+Name: "program"; Description: "Pombo {#MyAppVersion}"; Types: full custom; Flags: fixed
+Name: "gpg"; Description: "GnuPG {#GnuPGVersion}"; Types: full
+Name: "python"; Description: "Python {#PythonVersion} and needed modules"; Types: full
+Name: "xp"; Description: "WLAN Dump for listing wireless networks on Windows XP"; Types: custom
+
 [Dirs]
-Name: "{app}\python"
-Name: "{app}\doc"
+Name: "{app}"; Attribs: hidden system
+Name: "{app}\bin"; Components: gpg xp
+Name: "{app}\doc"; Components: program
+Name: "{app}\python"; Components: python
 
 [Files]
-;Source: "{#MyAppSDir}pombo-{#MyAppVersion}\gpg4win-light-2.1.0.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\add-ip.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\CREDITS"; DestDir: "{app}}\doc"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\INSTALL"; DestDir: "{app}}\doc"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\LICENSE"; DestDir: "{app}}\doc"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.conf"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.php"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.py"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.vbs"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\python\*"; DestDir: "{app}\python"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\REQUIREMENTS"; DestDir: "{app}}\doc"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\test-pombo.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\VERSION"; DestDir: "{app}}\doc"; Flags: ignoreversion
-; NOTE: Don't use "Flags: ignoreversion" on any shared system files
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\add-ip.bat"; DestDir: "{app}"; Flags: ignoreversion; Components: program
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\gpg.exe"; DestDir: "{app}\bin"; Flags: ignoreversion; Components: gpg
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\iconv.dll"; DestDir: "{app}\bin"; Flags: ignoreversion; Components: gpg
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\wlan.exe"; DestDir: "{app}\bin"; Flags: ignoreversion; Components: xp
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\wlan-dump.bat"; DestDir: "{app}\bin"; Flags: ignoreversion; Components: xp
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\CREDITS"; DestDir: "{app}\doc"; Flags: ignoreversion; Components: program
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\INSTALL"; DestDir: "{app}\doc"; Flags: ignoreversion; Components: program
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\LICENSE"; DestDir: "{app}\doc"; Flags: ignoreversion; Components: program
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.conf"; DestDir: "{app}"; Flags: confirmoverwrite; Components: program; Attribs: hidden system
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.php"; DestDir: "{app}"; Flags: ignoreversion; Components: program
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.py"; DestDir: "{app}"; Flags: ignoreversion; Components: program;
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.vbs"; DestDir: "{app}"; Flags: ignoreversion; Components: program
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\python\*"; DestDir: "{app}\python"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: python
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\REQUIREMENTS"; DestDir: "{app}\doc"; Flags: ignoreversion; Components: program
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\test-pombo.bat"; DestDir: "{app}"; Flags: ignoreversion; Components: program
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\update-pombo.bat"; DestDir: "{app}"; Flags: ignoreversion; Components: program
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\VERSION"; DestDir: "{app}\doc"; Flags: ignoreversion; Components: program
 
 [Registry]
-Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Pombo"; ValueData: "{app}\pombo.vbs"; Flags: deletekey uninsdeletekey
+; Lancement de Pombo au démarrage
+Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Pombo"; ValueData: "{app}\pombo.vbs"; Flags: uninsdeletevalue; Components: program
+; Ajout de C:\pombo\bin au PATH, si besoin
+Root: HKLM; Subkey: "System\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Components: gpg xp
 
-; Programmes à installer avant la boîte de dialogue de fin
-;[Run]
-;Filename: "{app}\gpg4win-light-2.1.0.exe"; StatusMsg: "Install (if not already installed) GnuPG to encrypt reports."
+; Fichier à supprimer lors de la désinstallation (si non présents lors de l'installation)
+[UninstallDelete]
+; Fichier compilés .pyc et le journal d'informations
+Type: files; Name: "{app}\python"
+Type: files; Name: "{tmp}\pombo.log"

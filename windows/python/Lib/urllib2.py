@@ -102,6 +102,7 @@ import sys
 import time
 import urlparse
 import bisect
+import warnings
 
 try:
     from cStringIO import StringIO
@@ -109,7 +110,7 @@ except ImportError:
     from StringIO import StringIO
 
 from urllib import (unwrap, unquote, splittype, splithost, quote,
-     addinfourl, splitport, splittag,
+     addinfourl, splitport, splittag, toBytes,
      splitattr, ftpwrapper, splituser, splitpasswd, splitvalue)
 
 # support for FileHandler, proxies via environment variables
@@ -165,6 +166,15 @@ class HTTPError(URLError, addinfourl):
 
     def __str__(self):
         return 'HTTP Error %s: %s' % (self.code, self.msg)
+
+    # since URLError specifies a .reason attribute, HTTPError should also
+    #  provide this attribute. See issue13211 fo discussion.
+    @property
+    def reason(self):
+        return self.msg
+
+    def info(self):
+        return self.hdrs
 
 # copied from cookielib.py
 _cut_port_re = re.compile(r":\d+$")
@@ -822,7 +832,7 @@ class AbstractBasicAuthHandler:
     # allow for double- and single-quoted realm values
     # (single quotes are a violation of the RFC, but appear in the wild)
     rx = re.compile('(?:.*,)*[ \t]*([^ \t]+)[ \t]+'
-                    'realm=(["\'])(.*?)\\2', re.I)
+                    'realm=(["\']?)([^"\']*)\\2', re.I)
 
     # XXX could pre-emptively send auth info already accepted (RFC 2617,
     # end of section 2, and section 1.2 immediately after "credentials"
@@ -855,6 +865,9 @@ class AbstractBasicAuthHandler:
             mo = AbstractBasicAuthHandler.rx.search(authreq)
             if mo:
                 scheme, quote, realm = mo.groups()
+                if quote not in ['"', "'"]:
+                    warnings.warn("Basic Auth Realm was unquoted",
+                                  UserWarning, 2)
                 if scheme.lower() == 'basic':
                     response = self.retry_http_basic_auth(host, req, realm)
                     if response and response.code != 401:
@@ -1166,12 +1179,14 @@ class AbstractHTTPHandler(BaseHandler):
 
         try:
             h.request(req.get_method(), req.get_selector(), req.data, headers)
+        except socket.error, err: # XXX what error?
+            h.close()
+            raise URLError(err)
+        else:
             try:
                 r = h.getresponse(buffering=True)
-            except TypeError: #buffering kw not supported
+            except TypeError: # buffering kw not supported
                 r = h.getresponse()
-        except socket.error, err: # XXX what error?
-            raise URLError(err)
 
         # Pick apart the HTTPResponse object to get the addinfourl
         # object initialized properly.
@@ -1397,7 +1412,8 @@ class FTPHandler(BaseHandler):
             raise URLError, ('ftp error: %s' % msg), sys.exc_info()[2]
 
     def connect_ftp(self, user, passwd, host, port, dirs, timeout):
-        fw = ftpwrapper(user, passwd, host, port, dirs, timeout)
+        fw = ftpwrapper(user, passwd, host, port, dirs, timeout,
+                        persistent=False)
 ##        fw.ftp.set_debuglevel(1)
         return fw
 
@@ -1446,3 +1462,9 @@ class CacheFTPHandler(FTPHandler):
                     del self.timeout[k]
                     break
             self.soonest = min(self.timeout.values())
+
+    def clear_cache(self):
+        for conn in self.cache.values():
+            conn.close()
+        self.cache.clear()
+        self.timeout.clear()

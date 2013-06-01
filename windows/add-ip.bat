@@ -1,5 +1,5 @@
 @echo off
-C:\pombo\python\python.exe C:\pombo\pombo.py add
+python\python.exe pombo.py add
 echo.
 echo.
 pause
