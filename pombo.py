@@ -588,6 +588,7 @@ try:
 			else:
 				LOG.warn('Unknown argument "%s" - try "help".', argv)
 		else:
+			LOG.debug('Log file is %s', LOGFILE)
 			pombo_work()
 			LOG.info('Session terminated.')
 except (KeyboardInterrupt):
