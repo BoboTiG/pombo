@@ -28,7 +28,7 @@
 #	 3. This notice may not be removed or altered from any source distribution.
 
 PROGRAMNAME = 'Pombo'
-PROGRAMVERSION = '0.0.10'
+PROGRAMVERSION = '0.0.11-a0'
 URL = 'https://github.com/BoboTiG/pombo'
 UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 VCVERSION = '0.9.5'
@@ -50,14 +50,12 @@ from IPy import IP
 OS      = 'Gnulinux'
 SEP     = '/'
 CONF    = '/etc/pombo.conf'
-IPFILE  = '/var/local/pombo'
 LOGFILE = '/var/log/pombo.log'
 if os.name == 'nt':
 	os.chdir(sys.path[0])
 	OS      = 'Windows'
 	SEP     = '\\'
 	CONF    = 'pombo.conf'
-	IPFILE  = 'pombo'
 	LOGFILE = tempfile.gettempdir() + '\pombo.log'
 
 # Console encoding
@@ -112,7 +110,6 @@ def config():
 		CONFIG = config._sections
 		CONFIG['General']['use_proxy'] = to_bool(CONFIG['General']['use_proxy'])
 		CONFIG['General']['use_env'] = to_bool(CONFIG['General']['use_env'])
-		CONFIG['General']['onlyonipchange'] = to_bool(CONFIG['General']['onlyonipchange'])
 		CONFIG['General']['enable_log'] = to_bool(CONFIG['General']['enable_log'])
 		CONFIG['General']['time_limit'] = int(CONFIG['General']['time_limit'])
 	except Exception as ex:
@@ -315,27 +312,8 @@ def snapshot(stolen):
 		return
 
 	if not stolen:
-		if CONFIG['General']['onlyonipchange']:
-			# Read previous IP
-			if not os.path.isfile(IPFILE):
-				LOG.info('First run, writing down IP in pombo.')
-				f = open(IPFILE, 'w+b')
-				if sys.version > '3':
-					f.write(bytes(hash_string(PUBLIC_IP), encoding))
-				else:
-					f.write(hash_string(PUBLIC_IP))
-				f.close()
-			else:
-				f = open(IPFILE, 'rb')
-				previous_ips = f.readlines()
-				f.close()
-				if hash_string(PUBLIC_IP) in [s.strip() for s in previous_ips]:
-					LOG.info('IP has not changed. Aborting.')
-					return
-				LOG.warn('IP has changed.')
-		else:
-			LOG.info('Computer not stolen and IP did not change, skipping report.')
-			return
+		LOG.info('Computer not stolen, skipping report.')
+		return
 
 	# Create the system report (IP, date/hour...)
 	LOG.info('Filename: %s', FILENAME)
@@ -510,37 +488,11 @@ def wifiaccesspoints():
 # --- [ Pombo options ] ------------------------------------------------
 # ----------------------------------------------------------------------
 
-def pombo_add():
-	config()
-	ip = public_ip()
-	if not ip:
-		print('Computer does not seem to be connected to the internet. Aborting.')
-	else:
-		known = False
-		if os.path.isfile(IPFILE):
-			# Read previous IP
-			f = open(IPFILE, 'rb')
-			previous_ips = f.readlines()
-			f.close()
-			if hash_string(ip) in [s.strip() for s in previous_ips]:
-				print('IP already known.')
-				known = True
-		if known is False:
-			print('Adding current ip %s to %s.' % (ip, IPFILE))
-			f = open(IPFILE, 'a+b')
-			if sys.version > '3':
-				f.write(bytes(hash_string(ip) + "\n", encoding))
-			else:
-				f.write(hash_string(ip) + "\n")
-			f.close()
-
 def pombo_help():
 	print('Options ---')
-	print('   add      add the current IP to %s' % IPFILE)
 	print('   check    launch Pombo in verbose mode')
 	print('   help     show this message')
 	print('   ip       show current IP')
-	print('   list     list known IP')
 	print('   update   check for update')
 	print('   version  show %s, python and versions' % PROGRAMNAME)
 
@@ -551,18 +503,6 @@ def pombo_ip():
 		print('Computer does not seem to be connected to the internet. Aborting.')
 	else:
 		print('IP  : %s' % ip)
-		iphash = hash_string(ip)
-		print('Hash: %s...%s' % (iphash[:20], iphash[-20:]))
-
-def pombo_list():
-	if not os.path.isfile(IPFILE):
-		print('%s does not exist!' % IPFILE)
-	else:
-		f = open(IPFILE, 'rb')
-		print('IP hashes in %s:' % IPFILE)
-		for s in f.readlines():
-			print('   %s...%s' % (s[:20], s.strip()[-20:]))
-		f.close()
 
 def pombo_update():
 	version = ''
@@ -635,16 +575,12 @@ try:
 		LOG.info('%s %s', PROGRAMNAME, PROGRAMVERSION)
 		argv = sys.argv[1:]
 		if argv:
-			if 'add' in argv:
-				pombo_add()
-			elif 'check' in argv:
+			if 'check' in argv:
 				pombo_work()
 			elif 'help' in argv:
 				pombo_help()
 			elif 'ip' in argv:
 				pombo_ip()
-			elif 'list' in argv:
-				pombo_list()
 			elif 'update' in argv:
 				pombo_update()
 			elif 'version' in argv:
