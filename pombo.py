@@ -67,15 +67,6 @@ if not encoding:
 LOG = logging.getLogger()
 LOG.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
-# Log to file
-file_handler = logging.FileHandler(LOGFILE, 'a')
-file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(formatter)
-LOG.addHandler(file_handler)
-# Log to console
-steam_handler = logging.StreamHandler()
-steam_handler.setLevel(logging.DEBUG)
-LOG.addHandler(steam_handler)
 
 # Get the configuration options
 if not os.access(CONF, os.R_OK):
@@ -95,10 +86,6 @@ FILENAME  = None
 # ----------------------------------------------------------------------
 # --- [ Functions ] ----------------------------------------------------
 # ----------------------------------------------------------------------
-
-def to_bool(value = ''):
-	''' Return a boolean of a given string '''
-	return str(value).lower() in {'true','oui','yes','1'}
 
 def config():
 	''' Get configuration from CONF file '''
@@ -168,9 +155,18 @@ def file_size(filename):
 		num /= 1024.0
 	return '%3.1f%s' % (num, 'TB')
 
-def hash_string(ip):
-	''' IP hash methods - could be easily modifed. '''
-	return hashlib.sha256(ip.encode()).hexdigest()
+def install_log_handlers():
+	''' Install LOG handlers: one for the file LOGFILE and one for the console '''
+	global LOG
+	# Log to file
+	file_handler = logging.FileHandler(LOGFILE, 'a')
+	file_handler.setLevel(logging.DEBUG)
+	file_handler.setFormatter(formatter)
+	LOG.addHandler(file_handler)
+	# Log to console
+	steam_handler = logging.StreamHandler()
+	steam_handler.setLevel(logging.DEBUG)
+	LOG.addHandler(steam_handler)
 
 def network_config():
 	''' Returns the network configuration, both wired and wireless '''
@@ -289,7 +285,7 @@ def screenshot():
 		return None
 	return filepath
 
-def snapshot(stolen):
+def snapshot(stolen = False):
 	''' Make a global snapshot of the system (ip, screenshot, webcam...)
 		and sends it to the internet.
 		If not internet connexion is available, will exit.
@@ -413,6 +409,10 @@ def stolen():
 			LOG.warn(ex)
 	return False
 
+def to_bool(value = ''):
+	''' Return a boolean of a given string '''
+	return str(value).lower() in {'true','oui','yes','1'}
+
 def systemreport():
 	''' Returns a system report: computer name, date/time, public IP,
 		list of wired and wireless interfaces and their configuration, etc.
@@ -535,35 +535,44 @@ def pombo_version():
 		print('with VideoCapture %s' % VCVERSION)
 		print('          and PIL %s' % Image.VERSION)
 
-def pombo_work():
+def pombo_work(testing=False):
 	config()
-	if OS == 'Windows':
-		# Cron job like for Windows :s
-		while True:
-			wait_normal = 60 * CONFIG['General']['time_limit']
-			wait_stolen = wait_normal // 3
-			if stolen():
-				start = time.time()
-				snapshot(True)
-				runtime = time.time() - start
-				time.sleep(wait_stolen - runtime)
-			else:
-				start = time.time()
-				snapshot(False)
-				runtime = time.time() - start
-				time.sleep(wait_normal - runtime)
+	if testing:
+		# "check" argument, we only want to test Pombo
+		if not CONFIG['General']['enable_log']:
+			install_log_handlers()
+		LOG.info('Testing when computer is not stolen ...')
+		snapshot()
+		LOG.info('Testing when computer is stolen ...')
+		snapshot(True)
 	else:
-		if stolen():
-			wait = 60 * CONFIG['General']['time_limit'] // 3
-			for i in range(1, 4):
-				LOG.info('* Attempt %d/3 *', i)
-				start = time.time()
-				snapshot(True)
-				runtime = time.time() - start
-				if i < 3:
-					time.sleep(wait - runtime)
+		if OS == 'Windows':
+			# Cron job like for Windows :s
+			while True:
+				wait_normal = 60 * CONFIG['General']['time_limit']
+				wait_stolen = wait_normal // 3
+				if stolen():
+					start = time.time()
+					snapshot(True)
+					runtime = time.time() - start
+					time.sleep(wait_stolen - runtime)
+				else:
+					start = time.time()
+					snapshot()
+					runtime = time.time() - start
+					time.sleep(wait_normal - runtime)
 		else:
-			snapshot(False)
+			if stolen():
+				wait = 60 * CONFIG['General']['time_limit'] // 3
+				for i in range(1, 4):
+					LOG.info('* Attempt %d/3 *', i)
+					start = time.time()
+					snapshot(True)
+					runtime = time.time() - start
+					if i < 3:
+						time.sleep(wait - runtime)
+			else:
+				snapshot()
 
 
 # ----------------------------------------------------------------------
@@ -572,11 +581,12 @@ def pombo_work():
 
 try:
 	if __name__ == '__main__':
+		install_log_handlers()
 		LOG.info('%s %s', PROGRAMNAME, PROGRAMVERSION)
 		argv = sys.argv[1:]
 		if argv:
 			if 'check' in argv:
-				pombo_work()
+				pombo_work(True)
 			elif 'help' in argv:
 				pombo_help()
 			elif 'ip' in argv:
