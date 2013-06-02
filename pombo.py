@@ -540,11 +540,16 @@ def pombo_work(testing=False):
 	if testing:
 		# "check" argument, we only want to test Pombo
 		if not CONFIG['General']['enable_log']:
+			# Re-install log handlers for testing
 			install_log_handlers()
-		LOG.info('Testing when computer is not stolen ...')
+		LOG.info('/!\\ Testing when computer is not stolen ...')
+		wait_normal = CONFIG['General']['time_limit']
 		snapshot()
-		LOG.info('Testing when computer is stolen ...')
+		LOG.info('In real scenario, Pombo will wait for %s minutes before next report.', wait_normal)
+		LOG.info('/!\\ Testing when computer is stolen ...')
 		snapshot(True)
+		wait_stolen = wait_normal // 3
+		LOG.info('In real scenario, Pombo will send a report each %s minutes.', wait_stolen)
 	else:
 		if OS == 'Windows':
 			# Cron job like for Windows :s
