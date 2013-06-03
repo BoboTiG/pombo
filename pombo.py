@@ -34,12 +34,15 @@ UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 VCVERSION = '0.9.5'
 
 import base64,datetime,hashlib,hmac,locale,logging,os,platform,\
-       re,requests,subprocess,sys,tempfile,time,zipfile
+       re,requests,smtplib,subprocess,sys,tempfile,time,zipfile
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from IPy import IP
 if sys.version > '3':
 	import configparser as ConfigParser
 else:
 	import ConfigParser
-from IPy import IP
 
 
 # ----------------------------------------------------------------------
@@ -366,8 +369,9 @@ def snapshot(stolen = False):
 
 	# Read GPG file and compute authentication token
 	f = open(gpgfilepath, 'r+b')
-	filedata = base64.b64encode(f.read())
+	data = f.read()
 	f.close()
+	filedata = base64.b64encode(data)
 	filesize = file_size(gpgfilepath)
 	os.remove(gpgfilepath)
 	gpgfilename = os.path.basename(gpgfilepath)
@@ -389,6 +393,28 @@ def snapshot(stolen = False):
 		except Exception as ex:
 			LOG.warn(ex)
 			pass
+
+	# Send to the email account
+	if CONFIG['General']['email_id']:
+		superman = CONFIG['General']['email_id']
+		LOG.info('Attaching file (%s) for %s', filesize, superman)
+		msg = MIMEMultipart()
+		msg['Subject'] = '[Pombo report] %s' % FILENAME
+		msg['From']    = superman
+		msg['To']      = superman
+		part = MIMEBase('application', 'octet-stream')
+		part.add_header('Content-Disposition', 'attachment; filename="%s"' % gpgfilename)
+		part.set_payload(data)
+		encoders.encode_base64(part)
+		msg.attach(part)
+		try:
+			s = smtplib.SMTP('localhost')
+			s.sendmail(superman, superman, msg.as_string())
+			s.quit()
+		except Exception as ex:
+			LOG.warn(ex)
+	else:
+		LOG.info('Skipping email attachment.')
 	return
 
 def stolen():
@@ -422,7 +448,7 @@ def systemreport():
 	separator = "\n" + 75 * "-" + "\n"
 	v = sys.version_info;
 	LOG.debug('Using python %s.%s.%s' % (v.major, v.minor, v.micro))
-	report  = '%s %s report' % (PROGRAMNAME, PROGRAMVERSION) + separator
+	report  = 'Pombo %s report' % (PROGRAMVERSION) + separator
 	report += str('Computer : ' +  ' '.join(platform.uname())) + separator
 	report += str('Public IP: %s ( Approximate geolocation: http://www.geoiptool.com/?IP=%s )' % (PUBLIC_IP, PUBLIC_IP)) + separator
 	report += str('Date/time: %s (local time)' % datetime.datetime.now()) + separator
@@ -496,7 +522,7 @@ def pombo_help():
 	print('   help     show this message')
 	print('   ip       show current IP')
 	print('   update   check for update')
-	print('   version  show %s, python and versions' % PROGRAMNAME)
+	print('   version  show Pombo, python and PIL versions')
 
 def pombo_ip():
 	config()
@@ -589,7 +615,7 @@ def pombo_work(testing=False):
 try:
 	if __name__ == '__main__':
 		install_log_handlers()
-		LOG.info('%s %s', PROGRAMNAME, PROGRAMVERSION)
+		LOG.info('Pombo %s', PROGRAMVERSION)
 		argv = sys.argv[1:]
 		if argv:
 			if 'check' in argv:
