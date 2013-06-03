@@ -207,9 +207,11 @@ def request_url(url, method = 'get', params = {}):
 		auth = (CONFIG['General']['auth_user'], CONFIG['General']['auth_pswd'])
 	try:
 		if method == 'get':
-			req = requests.get(url, params=params, proxies=dProxies, verify=ssl_cert_verif, auth=auth)
+			req = requests.get(url, params=params, proxies=dProxies,
+				verify=ssl_cert_verif, auth=auth, timeout=30)
 		else:
-			req = requests.post(url, data=params, proxies=dProxies, verify=ssl_cert_verif, auth=auth)
+			req = requests.post(url, data=params, proxies=dProxies,
+				verify=ssl_cert_verif, auth=auth, timeout=30)
 		ret = req.content.strip().decode()
 	except Exception as ex:
 		LOG.warn(ex)
@@ -545,11 +547,11 @@ def pombo_work(testing=False):
 		LOG.info('/!\\ Testing when computer is not stolen ...')
 		wait_normal = CONFIG['General']['time_limit']
 		snapshot()
-		LOG.info('In real scenario, Pombo will wait for %s minutes before next report.', wait_normal)
+		LOG.info('==> In real scenario, Pombo will wait for %s minutes before next report.', wait_normal)
 		LOG.info('/!\\ Testing when computer is stolen ...')
 		snapshot(True)
 		wait_stolen = wait_normal // 3
-		LOG.info('In real scenario, Pombo will send a report each %s minutes.', wait_stolen)
+		LOG.info('==> In real scenario, Pombo will send a report each %s minutes.', wait_stolen)
 	else:
 		if OS == 'Windows':
 			# Cron job like for Windows :s
