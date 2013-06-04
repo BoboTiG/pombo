@@ -127,13 +127,6 @@ def config():
 		LOG.info('Disabling logger')
 		LOG.handlers = []
 
-def current_network_connections():
-	''' Returns the addresses and ports to which this computer is 
-	    currently connected to. '''
-	if not CONFIG['Commands']['network_trafic']:
-		return 'Disabled.'
-	return runprocess(CONFIG['Commands']['network_trafic'].split(' '))
-
 def currentuser():
 	''' Return the user who is currently logged in and uses the X 
 	    session. None if could not be determined.
@@ -170,20 +163,6 @@ def install_log_handlers():
 	steam_handler = logging.StreamHandler()
 	steam_handler.setLevel(logging.DEBUG)
 	LOG.addHandler(steam_handler)
-
-def network_config():
-	''' Returns the network configuration, both wired and wireless '''
-	if not CONFIG['Commands']['network_config']:
-		return 'Disabled.'
-	return runprocess(CONFIG['Commands']['network_config'].split(' '))
-
-def network_route():
-	''' Returns a traceroute to a public server in order to detect ISPs
-	    and nearby routeurs.
-	'''
-	if not CONFIG['Commands']['traceroute']:
-		return 'Disabled.'
-	return runprocess(CONFIG['Commands']['traceroute'].split(' '))
 
 def public_ip():
 	''' Returns your public IP address.
@@ -453,14 +432,23 @@ def systemreport():
 	report += str('Public IP: %s ( Approximate geolocation: http://www.geoiptool.com/?IP=%s )' % (PUBLIC_IP, PUBLIC_IP)) + separator
 	report += str('Date/time: %s (local time)' % datetime.datetime.now()) + separator
 	separator = "\n" + separator
-	LOG.debug('System report: network_config()')
-	report += str("Network config:\n" + network_config().strip()) + separator
-	LOG.debug('System report: wifiaccesspoints()')
-	report += str("Nearby wireless access points:\n" + wifiaccesspoints().strip()) + separator
-	LOG.debug('System report: network_route()')
-	report += str("Network routes:\n" + network_route().strip()) + separator
-	LOG.debug('System report: current_network_connections()')
-	report += str("Current network connections:\n" + current_network_connections().strip() + "\n")
+	
+	# Primary commands, the Network ...
+	todo = [
+		('network_config','Network config'),
+		('wifi_access_points','Nearby wireless access points'),
+		('traceroute','Network routes'),
+		('network_trafic','Current network connections')
+	]
+	for key, info in todo:
+		LOG.debug('System report: %s()', key)
+		report += str("%s:\n" % info)
+		if not CONFIG['Commands'][key]:
+			report += 'Disabled.'
+		else:
+			informations = runprocess(CONFIG['Commands'][key].split(' ')).strip()
+			report += str(informations)
+		report += separator
 	if OS == 'Windows':
 		report = report.replace("\r\n", "\n")
 	return report
@@ -504,12 +492,6 @@ def webcamshot():
 	if not os.path.isfile(filepath):
 		return None
 	return filepath
-
-def wifiaccesspoints():
-	''' Returns a list of nearby wifi access points (AP). '''
-	if not CONFIG['Commands']['wifi_access_points']:
-		return 'Disabled.'
-	return runprocess(CONFIG['Commands']['wifi_access_points'].split(' '))
 
 
 # ----------------------------------------------------------------------
