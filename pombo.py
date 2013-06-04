@@ -520,17 +520,8 @@ def pombo_help():
 	print('Options ---')
 	print('   check    launch Pombo in verbose mode')
 	print('   help     show this message')
-	print('   ip       show current IP')
 	print('   update   check for update')
 	print('   version  show Pombo, python and PIL versions')
-
-def pombo_ip():
-	config()
-	ip = public_ip()
-	if not ip:
-		print('Computer does not seem to be connected to the internet. Aborting.')
-	else:
-		print('IP  : %s' % ip)
 
 def pombo_update():
 	version = ''
@@ -622,8 +613,6 @@ try:
 				pombo_work(True)
 			elif 'help' in argv:
 				pombo_help()
-			elif 'ip' in argv:
-				pombo_ip()
 			elif 'update' in argv:
 				pombo_update()
 			elif 'version' in argv:
