@@ -38,8 +38,11 @@ OutputDir={#MyAppSDir}\pombo-{#MyAppVersion}
 OutputBaseFilename=pombo-{#MyAppVersion}_setup
 SolidCompression=yes
 SetupIconFile={#MyAppSDir}\pombo-{#MyAppVersion}\pombo.ico
-UninstallDisplayIcon={#MyAppSDir}\pombo-{#MyAppVersion}\pombo.ico
-UninstallDisplayName={#MyAppName} {#MyAppVersion}
+ChangesEnvironment=true
+;UninstallDisplayIcon={#MyAppSDir}\pombo-{#MyAppVersion}\pombo.ico
+;UninstallDisplayName={#MyAppName} {#MyAppVersion}
+; Empêcher l'apparition du programme dans Ajouter/Suprrimer des programmes
+CreateUninstallRegKey=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -54,6 +57,9 @@ Name: "program"; Description: "Pombo {#MyAppVersion}"; Types: full custom; Flags
 Name: "gpg"; Description: "GnuPG {#GnuPGVersion}"; Types: full
 Name: "python"; Description: "Python {#PythonVersion} and needed modules"; Types: full
 Name: "xp"; Description: "WLAN Dump for listing wireless networks on Windows XP"; Types: custom
+
+[Tasks]
+Name: modifypath; Description: &Add application directory to your environmental path; Flags: restart; Components: gpg xp
 
 [Dirs]
 Name: "{app}"; Attribs: hidden system
@@ -83,11 +89,19 @@ Source: "{#MyAppSDir}pombo-{#MyAppVersion}\VERSION"; DestDir: "{app}\doc"; Flags
 [Registry]
 ; Lancement de Pombo au démarrage
 Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Pombo"; ValueData: "{app}\pombo.vbs"; Flags: uninsdeletevalue; Components: program
-; Ajout de C:\pombo\bin au PATH, si besoin
-Root: HKLM; Subkey: "System\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Components: gpg xp
 
 ; Fichier à supprimer lors de la désinstallation (si non présents lors de l'installation)
 [UninstallDelete]
-; Fichier compilés .pyc et le journal d'informations
-Type: files; Name: "{app}\python"
-Type: files; Name: "{tmp}\pombo.log"
+Type: filesandordirs; Name: "{app}"
+
+[Code]
+; Ajout de C:\pombo\bin au PATH, si besoin
+const
+  ModPathName = 'modifypath';
+  ModPathType = 'system';
+function ModPathDir(): TArrayOfString;
+begin
+	setArrayLength(Result, 1);
+	Result[0] := ExpandConstant('{app}\bin');
+end;
+#include "modpath.iss"
