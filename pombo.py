@@ -36,11 +36,9 @@ Code quality check:
     (open htmlcov/index.html)
 '''
 
-__version__ = '0.0.11-a1'
 
-URL = 'https://github.com/BoboTiG/pombo'
-UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
-VCVERSION = '0.9.5'
+__version__ = '0.0.11-a2'
+
 
 import base64
 import datetime
@@ -80,6 +78,10 @@ if os.name == 'nt':
 # --- [ Variables ] ----------------------------------------------------
 # ----------------------------------------------------------------------
 
+# Links
+URL = 'https://github.com/BoboTiG/pombo'
+UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
+
 # Current running OS specifities
 OS      = 'Gnulinux'
 SEP     = '/'
@@ -87,12 +89,13 @@ CONF    = '/etc/pombo.conf'
 IPFILE  = '/var/local/pombo'
 LOGFILE = '/var/log/pombo.log'
 if os.name == 'nt':
-    os.chdir(sys.path[0])
+    #os.chdir(sys.path[0])
     OS      = 'Windows'
     SEP     = '\\'
     IPFILE  = 'pombo'
     CONF    = 'pombo.conf'
     LOGFILE = tempfile.gettempdir() + '\pombo.log'
+    VCVERSION = '0.9.5'
 
 # Console encoding
 ENCODING = sys.stdin.encoding or locale.getdefaultlocale()[1]
@@ -102,13 +105,7 @@ if not ENCODING:
 # Informations logging
 LOG = logging.getLogger()
 
-# Get the configuration options
 CONFIG = {}
-if not os.access(CONF, os.R_OK):
-    print(' ! Impossible to read the config file.')
-    sys.exit(1)
-
-# Proxies
 PROXIES = {}
 
 
@@ -180,7 +177,7 @@ def config():
         LOG.handlers = []
 
 
-def currentuser():
+def current_user():
     '''
         Return the user who is currently logged in and uses the X
         session. None if could not be determined.
@@ -196,6 +193,73 @@ def currentuser():
                 if '(:0)' in line:
                     break
     return user
+
+
+def get_chassis_type():
+    '''
+        Get the chassis type.
+    '''
+
+    chassis_type = 'Unknown'
+    if OS == 'Windows':
+        chassis = ('Other', 'Unknown', 'Desktop', 'Low Profile Desktop',
+            'Pizza Box', 'Mini Tower', 'Tower', 'Portable', 'Laptop',
+            'Notebook', 'Hand Held', 'Docking Station', 'All in One',
+            'Sub Notebook', 'Space-Saving', 'Lunch Box', 'Main System Chassis',
+            'Sub Chassis', ' Bus Expansion Chassis', 'Peripheral Chassis',
+            'Rack Mount Chassis', 'Sealed-Case PC')
+        cmd = 'wmic systemenclosure get chassistypes /value'
+        res = runprocess(cmd, useshell=True).strip()
+        number = res.split('=')[1][1:-1]
+        chassis_type = chassis[int(number)]
+    else:
+        cmd = '/usr/sbin/dmidecode --string chassis-type'
+        chassis_type = runprocess(cmd, useshell=True).strip()
+    return chassis_type
+
+
+def get_manufacturer():
+    '''
+        Get the manufacturer.
+    '''
+
+    if OS == 'Windows':
+        cmd = 'wmic csproduct get vendor, name, version /value'
+        res = runprocess(cmd, useshell=True).strip().split("\r\n")
+        manufacturer  = res[1].split('=')[1].strip() + ' - '
+        manufacturer += res[0].split('=')[1].strip() + ' - '
+        manufacturer += res[2].split('=')[1].strip()
+    else:
+        manufacturer = ''
+        for info in [
+            'system-manufacturer',
+            'system-product-name',
+            'system-version'
+        ]:
+            cmd = '/usr/sbin/dmidecode --string ' + info
+            res = runprocess(cmd, useshell=True).strip()
+            manufacturer += res + ' - '
+        manufacturer = manufacturer[:-3]
+    return manufacturer
+
+
+def get_serial():
+    '''
+        Get the serial number.
+    '''
+
+    serial = 'Unknown'
+    cmd = '/usr/sbin/dmidecode --string system-serial-number'
+    if OS == 'Windows':
+        cmd = 'wmic bios get serialnumber /value'
+    res = runprocess(cmd, useshell=True).strip()
+    if OS == 'Windows':
+        if not res.split('=')[1] == '0':
+            serial = res.split('=')[1]
+    else:
+        if not res == 'System Serial Number':
+            serial = res
+    return serial
 
 
 def file_size(filename):
@@ -382,7 +446,7 @@ def screenshot(filename):
 
     LOG.info('Taking screenshot')
     filepath = '%s%c%s_screenshot.jpg' % (tempfile.gettempdir(), SEP, filename)
-    user = currentuser()
+    user = current_user()
     if not user:
         LOG.error('Could not determine current user. Cannot take screenshot.')
         return None
@@ -478,9 +542,9 @@ def snapshot(current_ip):
     filepath = '%s%c%s.txt' % (tempfile.gettempdir(), SEP, report_name)
     fileh = open(filepath, 'ab')
     if sys.version > '3':
-        fileh.write(bytes(systemreport(current_ip), ENCODING))
+        fileh.write(bytes(system_report(current_ip), ENCODING))
     else:
-        fileh.write(systemreport(current_ip))
+        fileh.write(system_report(current_ip))
     fileh.close()
     filestozip = []
     filestozip.append(filepath)
@@ -556,7 +620,7 @@ def stolen():
     return False
 
 
-def systemreport(current_ip):
+def system_report(current_ip):
     '''
         Returns a system report: computer name, date/time, public IP,
         list of wired and wireless interfaces and their configuration, etc.
@@ -566,7 +630,10 @@ def systemreport(current_ip):
     ver = sys.version_info
     LOG.debug('Using python %s.%s.%s' % (ver.major, ver.minor, ver.micro))
     report  = 'Pombo %s report' % (__version__) + separator
-    report += str('Computer : ' +  ' '.join(platform.uname())) + separator
+    report += str('Computer : ' +  get_manufacturer()) + "\n"
+    report += str('Type     : ' +  get_chassis_type()) + "\n"
+    report += str('Serial/N : ' +  get_serial()) + "\n"
+    report += str('System   : ' +  ' '.join(platform.uname())) + separator
     report += str('Public IP: %s ( Approximate geolocation: '  % current_ip + \
                 'http://www.geoiptool.com/?IP=%s )' % current_ip)
     report += separator
@@ -817,6 +884,11 @@ def pombo_work(testing=False):
 # ----------------------------------------------------------------------
 
 if __name__ == '__main__':
+
+    if not os.access(CONF, os.R_OK):
+        print(' ! Impossible to read the config file.')
+        sys.exit(1)
+
     try:
         install_log_handlers(logging.INFO)
         LOG.info('Pombo %s', __version__)

@@ -19,3 +19,5 @@ Ainsi qu'aux chers contributeurs/testeurs :
 Fichiers SVG pour l'icône copiés depuis openclipart.org et wikipedia.org.
 
 Les icônes de l'interface graphique (Panneau de configuration) sont issues du pack d'icônes Tango.
+
+Les fonctions get_* ont été grandement pompées depuis https://github.com/updatengine/updatengine-client
