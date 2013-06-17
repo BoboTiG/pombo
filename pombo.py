@@ -38,6 +38,8 @@ Code quality check:
 
 
 __version__ = '0.0.11-a2'
+__author__  = 'BoboTiG'
+__date__    = '$17-Jun-2013 13:18:57$'
 
 
 import base64
@@ -94,7 +96,7 @@ if os.name == 'nt':
     SEP     = '\\'
     IPFILE  = 'pombo'
     CONF    = 'pombo.conf'
-    LOGFILE = tempfile.gettempdir() + '\pombo.log'
+    LOGFILE = tempfile.gettempdir() + SEP + 'pombo.log'
     VCVERSION = '0.9.5'
 
 # Console encoding
@@ -102,10 +104,8 @@ ENCODING = sys.stdin.encoding or locale.getdefaultlocale()[1]
 if not ENCODING:
     ENCODING = 'utf-8'
 
-# Informations logging
-LOG = logging.getLogger()
-
-CONFIG = {}
+LOG     = None
+CONFIG  = {}
 PROXIES = {}
 
 
@@ -890,6 +890,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
+        LOG = logging.getLogger()
         install_log_handlers(logging.INFO)
         LOG.info('Pombo %s', __version__)
         if sys.argv[1:]:
@@ -914,7 +915,7 @@ if __name__ == '__main__':
             LOG.debug('Log file is %s', LOGFILE)
             pombo_work()
             LOG.info('Session terminated.')
-    except (KeyboardInterrupt):
+    except KeyboardInterrupt:
         LOG.warn('*** STOPPING operations ***')
         sys.exit(1)
     except Exception as ex:
