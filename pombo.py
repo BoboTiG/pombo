@@ -134,7 +134,7 @@ def config():
     error = False
     for key in CONFIG:
         if CONFIG[key] is None:
-            LOG.error('Config error: empty %s parameter.', ex)
+            LOG.error('Config error: empty %s parameter.', key)
             error = True
     if error:
         LOG.warn('Pombo has to stop, please check parameters.')
