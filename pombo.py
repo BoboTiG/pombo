@@ -900,7 +900,7 @@ if __name__ == '__main__':
             for arg in sys.argv[1:]:
                 if arg == 'add':
                     pombo_add()
-                if arg == 'check':
+                elif arg == 'check':
                     pombo_work(testing=True)
                 elif arg == 'help':
                     pombo_help()
