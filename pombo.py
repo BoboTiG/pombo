@@ -37,9 +37,9 @@ Code quality check:
 '''
 
 
-__version__ = '0.0.11-a2'
+__version__ = '0.0.11-a3'
 __author__  = 'BoboTiG'
-__date__    = '$17-Jun-2013 13:18:57$'
+__date__    = '$17-Jun-2013 23:40:57$'
 
 
 import base64
