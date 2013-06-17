@@ -490,10 +490,9 @@ def snapshot_email(report_name, filename, data):
     try:
         conn = smtplib.SMTP('localhost')
         conn.sendmail(superman, superman, msg.as_string())
-    except SMTPException as ex:
-        LOG.warn(ex)
-    finally:
         conn.quit()
+    except Exception as ex:
+        LOG.error(ex)
 
 
 def snapshot_sendto_server(filename, filepath, data):
@@ -689,6 +688,10 @@ def webcamshot(filename):
             cam = Device(devnum=0)
             if not cam:
                 cam = Device(devnum=1)
+        except Exception as ex:
+            LOG.error('vidcap.Error: %s', ex)
+            return None
+        try:
             # Here you can modify the picture resolution
             #cam.setResolution(768, 576)
             cam.getImage()
@@ -891,7 +894,7 @@ if __name__ == '__main__':
 
     try:
         LOG = logging.getLogger()
-        install_log_handlers(logging.INFO)
+        install_log_handlers(logging.DEBUG)
         LOG.info('Pombo %s', __version__)
         if sys.argv[1:]:
             for arg in sys.argv[1:]:
