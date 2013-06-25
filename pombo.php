@@ -1,6 +1,6 @@
 <?php
 	/****************
-	 * Pombo 0.0.10 *
+	 * Pombo 0.0.11 *
 	 ****************/
 	 
 	error_reporting(0);
@@ -8,7 +8,7 @@
 	$PASSWORD  = 'mysecret';
 	$CHECKFILE = '.stolen';
 	
-	if ( substr(phpversion(), 0, 1) == 4 ) {
+	if ( ! function_exists('hash_hmac') ) {
 		//Calculate HMAC-SHA1 according to RFC2104
 		// http://www.ietf.org/rfc/rfc2104.txt
 		function hash_hmac($hashfunc, $data, $key) {
