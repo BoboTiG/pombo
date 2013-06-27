@@ -39,7 +39,7 @@ Code quality check:
 
 __version__ = '0.0.11-a3'
 __author__  = 'BoboTiG'
-__date__    = '$17-Jun-2013 23:40:57$'
+__date__    = '$27-Jun-2013 11:13:57$'
 
 
 import base64
@@ -51,7 +51,6 @@ import logging
 import os
 import platform
 import re
-import requests
 import smtplib
 import subprocess
 import sys
@@ -59,21 +58,27 @@ import tempfile
 import time
 import zipfile
 
+
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from smtplib import SMTPException
 
-from requests.exceptions import ConnectionError, RequestException
-from IPy import IP
-
 try:
     import ConfigParser
 except ImportError:
     import configparser as ConfigParser
-if os.name == 'nt':
-    from PIL import Image, ImageGrab
-    from VideoCapture import Device
+
+try:
+    import requests
+    from requests.exceptions import ConnectionError, RequestException
+    from IPy import IP
+    if os.name == 'nt':
+        from PIL import Image, ImageGrab
+        from VideoCapture import Device
+except ImportError as ex:
+    print(ex)
+    sys.exit(1)
 
 
 # ----------------------------------------------------------------------
@@ -94,8 +99,8 @@ if os.name == 'nt':
     #os.chdir(sys.path[0])
     OS      = 'Windows'
     SEP     = '\\'
-    IPFILE  = 'pombo'
-    CONF    = 'pombo.conf'
+    IPFILE  = 'c:\\pombo\\pombo'
+    CONF    = 'c:\\pombo\\pombo.conf'
     LOGFILE = tempfile.gettempdir() + SEP + 'pombo.log'
     VCVERSION = '0.9.5'
 
@@ -270,9 +275,9 @@ def file_size(filename):
     num = os.path.getsize(filename)
     for key in ['B', 'KB', 'MB', 'GB']:
         if num < 1024.0 and num > -1024.0:
-            return '%3.1f%s' % (num, key)
+            return '{0:3.1f}{1}'.format(num, key)
         num /= 1024.0
-    return '%3.1f%s' % (num, 'TB')
+    return '{0:3.1f}{1}'.format(num, 'TB')
 
 
 def hash_string(current_ip):
@@ -318,9 +323,9 @@ def ip_changed(current_ip):
             fileh.close()
         else:
             fileh = open(IPFILE, 'rb')
-            previous_ips = fileh.readlines()
+            prev_ips = fileh.readlines()
             fileh.close()
-            if hash_string(current_ip) in [i_p.strip() for i_p in previous_ips]:
+            if hash_string(current_ip) in [i_p.strip() for i_p in prev_ips]:
                 LOG.info('IP has not changed. Aborting.')
                 return False
             LOG.warn('IP has changed.')
@@ -364,7 +369,7 @@ def public_ip():
     return None
 
 
-def request_url(url, method = 'get', params = None):
+def request_url(url, method='get', params=None):
     '''
         Make a request with all options "aux petits oignons".
     '''
@@ -389,7 +394,7 @@ def request_url(url, method = 'get', params = None):
     return ret
 
 
-def runprocess(commandline, useshell = False):
+def runprocess(commandline, useshell=False):
     '''
         Runs a sub-process, wait for termination and returns
         the process output (both stdout and stderr, concatenated).
@@ -444,8 +449,9 @@ def screenshot(filename):
         LOG.info('Skipping screenshot.')
         return None
 
+    temp = tempfile.gettempdir()
     LOG.info('Taking screenshot')
-    filepath = '%s%c%s_screenshot.jpg' % (tempfile.gettempdir(), SEP, filename)
+    filepath = '{0}{1}{2}_screenshot.jpg'.format(temp, SEP, filename)
     user = current_user()
     if not user:
         LOG.error('Could not determine current user. Cannot take screenshot.')
@@ -478,12 +484,12 @@ def snapshot_email(report_name, filename, data):
     superman = CONFIG['email_id']
     LOG.info('Attaching report for %s', superman)
     msg = MIMEMultipart()
-    msg['Subject'] = '[Pombo report] %s' % report_name
+    msg['Subject'] = '[Pombo report] {0}'.format(report_name)
     msg['From']    = superman
     msg['To']      = superman
     part = MIMEBase('application', 'octet-stream')
-    part.add_header('Content-Disposition', 'attachment; filename="%s"'
-                    % filename)
+    part.add_header('Content-Disposition', 'attachment; filename="{0}"'
+                    .format(filename))
     part.set_payload(data)
     encoders.encode_base64(part)
     msg.attach(part)
@@ -533,12 +539,13 @@ def snapshot(current_ip):
     # If a particular snapshot fails, it will simply skip it.
 
     # Initialisations
+    temp = tempfile.gettempdir()
     report_name = platform.node() + time.strftime('_%Y%m%d_%H%M%S')
 
     # Create the system report (IP, date/hour...)
     LOG.info('Filename: %s', report_name)
     LOG.info('Collecting system info')
-    filepath = '%s%c%s.txt' % (tempfile.gettempdir(), SEP, report_name)
+    filepath = '{0}{1}{2}.txt'.format(temp, SEP, report_name)
     fileh = open(filepath, 'ab')
     if sys.version > '3':
         fileh.write(bytes(system_report(current_ip), ENCODING))
@@ -560,8 +567,8 @@ def snapshot(current_ip):
 
     # Zip files:
     LOG.info('Zipping files')
-    os.chdir(tempfile.gettempdir())
-    zipfilepath = '%s%c%s.zip' % (tempfile.gettempdir(), SEP, report_name)
+    os.chdir(temp)
+    zipfilepath = '{0}{1}{2}.zip'.format(temp, SEP, report_name)
     fileh = zipfile.ZipFile(zipfilepath, 'w', zipfile.ZIP_DEFLATED)
     for filepath in filestozip:
         fileh.write(os.path.basename(filepath))
@@ -627,16 +634,16 @@ def system_report(current_ip):
 
     separator = "\n" + 75 * "-" + "\n"
     ver = sys.version_info
-    LOG.debug('Using python %s.%s.%s' % (ver.major, ver.minor, ver.micro))
-    report  = 'Pombo %s report' % (__version__) + separator
+    LOG.debug('Using python %s.%s.%s', ver.major, ver.minor, ver.micro)
+    report  = 'Pombo {0} report'.format(__version__) + separator
     report += str('Computer : ' +  get_manufacturer()) + "\n"
-    report += str('Type     : ' +  get_chassis_type()) + "\n"
+    report += str('Chassis  : ' +  get_chassis_type()) + "\n"
     report += str('Serial/N : ' +  get_serial()) + "\n"
     report += str('System   : ' +  ' '.join(platform.uname())) + separator
-    report += str('Public IP: %s ( Approximate geolocation: '  % current_ip + \
-                'http://www.geoiptool.com/?IP=%s )' % current_ip)
+    report += 'Public IP: {0} ( Approximate geolocation: {1}{0}'.format(
+                current_ip, 'http://www.geoiptool.com/?IP=')
     report += separator
-    report += str('Date/time: %s (local time)' % datetime.datetime.now())
+    report += 'Date/time: {0} (local time)'.format(datetime.datetime.now())
     report += separator
     separator = "\n" + separator
 
@@ -649,7 +656,7 @@ def system_report(current_ip):
     ]
     for key, info in todo:
         LOG.debug('System report: %s()', key)
-        report += str("%s:\n" % info)
+        report += str("{0}:\n").format(info)
         if not CONFIG[key]:
             report += 'Disabled.'
         else:
@@ -663,7 +670,7 @@ def system_report(current_ip):
     return report
 
 
-def to_bool(value = ''):
+def to_bool(value=''):
     '''
         Return a boolean of a given string.
     '''
@@ -681,9 +688,10 @@ def webcamshot(filename):
         LOG.info('Skipping webcamshot.')
         return None
 
+    temp = tempfile.gettempdir()
     LOG.info('Taking webcamshot')
     if OS == 'Windows':
-        filepath = '%s%c%s_webcam.jpg' % (tempfile.gettempdir(), SEP, filename)
+        filepath = '{0}{1}{2}_webcam.jpg'.format(temp, SEP, filename)
         try:
             cam = Device(devnum=0)
             if not cam:
@@ -701,14 +709,14 @@ def webcamshot(filename):
             LOG.error(ex)
             return None
     else:
-        filepath = '%s%c%s_webcam.%s' % (tempfile.gettempdir(), SEP, filename,
+        filepath = '{0}{1}{2}_webcam.{3}'.format(temp, SEP, filename,
                     CONFIG['camshot_filetype'])
         cmd = CONFIG['camshot'].replace('<filepath>', filepath)
         runprocess(cmd, useshell=True)
         if os.path.isfile(filepath):
             if CONFIG['camshot_filetype'] == 'ppm':
-                new_filepath = '%s%c%s_webcam.jpg' % \
-                            (tempfile.gettempdir(), SEP, filename)
+                new_filepath = '{0}{1}{2}_webcam.jpg'.format(
+                                temp, SEP, filename)
                 runprocess(['/usr/bin/convert', filepath, new_filepath])
                 os.unlink(filepath)
                 filepath = new_filepath
@@ -740,7 +748,7 @@ def pombo_add():
             print('IP already known.')
             known = True
     if known is False:
-        print('Adding current ip %s to %s.' % (current_ip, IPFILE))
+        print('Adding current ip {0} to {1}.'.format(current_ip, IPFILE))
         fileh = open(IPFILE, 'a+b')
         if sys.version > '3':
             fileh.write(bytes(hash_string(current_ip) + "\n", ENCODING))
@@ -755,7 +763,7 @@ def pombo_help():
     '''
 
     print('Options ---')
-    print('   add      add the current IP to %s' % IPFILE)
+    print('   add      add the current IP to {0}'.format(IPFILE))
     print('   check    launch Pombo in verbose mode')
     print('   help     show this message')
     print('   ip       show current IP')
@@ -773,23 +781,23 @@ def pombo_ip():
     current_ip = public_ip()
     if not current_ip:
         return
-    print('IP  : %s' % current_ip)
+    print('IP  : {0}'.format(current_ip))
     iphash = hash_string(current_ip)
-    print('Hash: %s...%s' % (iphash[:20], iphash[-20:]))
+    print('Hash: {0}...{1}'.format(iphash[:20], iphash[-20:]))
 
 
 def pombo_list():
     '''
-        Print the known IP from IPFILE.
+        Print known IPs from IPFILE.
     '''
 
     if not os.path.isfile(IPFILE):
-        print('%s does not exist!' % IPFILE)
+        print('{0} does not exist!'.format(IPFILE))
     else:
         fileh = open(IPFILE, 'rb')
-        print('IP hashes in %s:' % IPFILE)
-        for ip_hash in fileh.readlines():
-            print('   %s...%s' % (ip_hash[:20], ip_hash.strip()[-20:]))
+        print('IP hashes in {0}:'.format(IPFILE))
+        for ip_h in fileh.readlines():
+            print('   {0}...{1}'.format(ip_h[:20], ip_h.strip()[-20:]))
         fileh.close()
 
 
@@ -802,21 +810,21 @@ def pombo_update():
     try:
         req = requests.get(UPLINK, verify=True)
     except ConnectionError as ex:
-        print(' ! Arf, check failed: %s !' % ex)
+        print(' ! Arf, check failed: {0} !'.format(ex))
         print(' . Please check later.')
         return
     version = req.content.strip().decode()
     if version != __version__:
         if re.match('^\d{1,}.\d{1}.\d{1,}$', version):
-            print(' + Yep! A new version is available: %s' % version)
-            print(' - Check %s for upgrade.' % URL)
+            print(' + Yep! A new version is available: {0}'.format(version))
+            print(' - Check {0} for upgrade.'.format(URL))
         elif re.match('^\d{1,}.\d{1}.\d{1,}-', version):
             typever = 'Alpha'
             if 'b' in version:
                 typever = 'Beta'
-            print(' - %s version available: %s' % (typever, version))
+            print(' - {0} version available: {1}'.format(typever, version))
             print(' . You should upgrade only for tests purpose!')
-            print(' - Check %s' % URL)
+            print(' - Check {0}'.format(URL))
             print('   and report issues/ideas on GitHub or at ' + \
                     'bobotig (at) gmail (dot) com.')
     else:
@@ -829,10 +837,11 @@ def pombo_version():
     '''
 
     ver = sys.version_info
-    print('I am using python %s.%s.%s' % (ver.major, ver.minor, ver.micro))
+    print('I am using python {0}.{1}.{2}'.format(
+            ver.major, ver.minor, ver.micro))
     if OS == 'Windows':
-        print('with VideoCapture %s' % VCVERSION)
-        print('          and PIL %s' % Image.VERSION)
+        print('with VideoCapture {0}'.format(VCVERSION))
+        print('          and PIL {0}'.format(Image.VERSION))
 
 
 def pombo_work(testing=False):
@@ -846,6 +855,8 @@ def pombo_work(testing=False):
         if not CONFIG['enable_log']:
             # Re-install log handlers for testing
             install_log_handlers(logging.DEBUG)
+        else:
+            LOG.setLevel(logging.DEBUG)
 
         LOG.info('[Test] Simulating stolen computer ...')
         current_ip = public_ip()
@@ -854,7 +865,7 @@ def pombo_work(testing=False):
         snapshot(current_ip)
         wait_stolen = CONFIG['time_limit'] // 3
         LOG.info('==> In real scenario, Pombo will send a report each' + \
-                ' %s minutes.', wait_stolen)
+                ' {0} minutes.'.format(wait_stolen))
     else:
         if OS == 'Windows':
             # Cron job like for Windows :s
@@ -894,8 +905,8 @@ if __name__ == '__main__':
 
     try:
         LOG = logging.getLogger()
-        install_log_handlers(logging.DEBUG)
-        LOG.info('Pombo %s', __version__)
+        install_log_handlers(logging.WARN)
+        print('Pombo {0}'.format(__version__))
         if sys.argv[1:]:
             for arg in sys.argv[1:]:
                 if arg == 'add':
