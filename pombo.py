@@ -200,29 +200,6 @@ def current_user():
     return user
 
 
-def get_chassis_type():
-    '''
-        Get the chassis type.
-    '''
-
-    chassis_type = 'Unknown'
-    if OS == 'Windows':
-        chassis = ('Other', 'Unknown', 'Desktop', 'Low Profile Desktop',
-            'Pizza Box', 'Mini Tower', 'Tower', 'Portable', 'Laptop',
-            'Notebook', 'Hand Held', 'Docking Station', 'All in One',
-            'Sub Notebook', 'Space-Saving', 'Lunch Box', 'Main System Chassis',
-            'Sub Chassis', ' Bus Expansion Chassis', 'Peripheral Chassis',
-            'Rack Mount Chassis', 'Sealed-Case PC')
-        cmd = 'wmic systemenclosure get chassistypes /value'
-        res = runprocess(cmd, useshell=True).strip()
-        number = res.split('=')[1][1:-1]
-        chassis_type = chassis[int(number)]
-    else:
-        cmd = '/usr/sbin/dmidecode --string chassis-type'
-        chassis_type = runprocess(cmd, useshell=True).strip()
-    return chassis_type
-
-
 def get_manufacturer():
     '''
         Get the manufacturer.
@@ -637,7 +614,6 @@ def system_report(current_ip):
     LOG.debug('Using python %s.%s.%s', ver.major, ver.minor, ver.micro)
     report  = 'Pombo {0} report'.format(__version__) + separator
     report += str('Computer : ' +  get_manufacturer()) + "\n"
-    report += str('Chassis  : ' +  get_chassis_type()) + "\n"
     report += str('Serial/N : ' +  get_serial()) + "\n"
     report += str('System   : ' +  ' '.join(platform.uname())) + separator
     report += 'Public IP: {0} ( Approximate geolocation: {1}{0}'.format(
