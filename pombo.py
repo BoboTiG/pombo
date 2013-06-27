@@ -62,7 +62,6 @@ import zipfile
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
-from smtplib import SMTPException
 
 try:
     import ConfigParser
