@@ -9,20 +9,26 @@ if [ $(id -ru) -ne 0 ]; then
 	exit 0
 fi
 
+inst_dir=/usr/local/bin
+[ -d ${inst_dir} ] || inst_dir=/usr/local/sbin
+
 echo "\nInstalling (verbose) ..."
 [ -f /etc/pombo.conf ] && mv -fv /etc/pombo.conf /etc/pombo.conf.old
 install -v pombo.conf /etc
 chmod 600 -v /etc/pombo.conf
-install -v pombo.py /usr/local/bin/pombo
-chmod +x -v /usr/local/bin/pombo
+install -v pombo.py ${inst_dir}/pombo
+chmod +x -v ${inst_dir}/pombo
+
 if test -f /etc/crontab ; then
+	# Retro-compatibility (version <= 0.0.9)
 	if [ $(grep -c "/usr/local/bin/pombo" /etc/crontab) != 0 ] ; then
 		echo "« sed -i '/usr/local/bin/pombo/d' /etc/crontab »"
 		sed -i '\/usr\/local\/bin\/pombo/d' /etc/crontab
 	fi
 fi
-echo "« */15 * * * * root /usr/local/bin/pombo >>/etc/cron.d/pombo »"
-echo "*/15 * * * * root /usr/local/bin/pombo" >>/etc/cron.d/pombo
+[ -f /etc/cron.d/pombo ] && rm -fv /etc/cron.d/pombo
+echo "« */15 * * * * root ${inst_dir}/pombo >>/etc/cron.d/pombo »"
+echo "*/15 * * * * root ${inst_dir}/pombo" >>/etc/cron.d/pombo
 [ -f /var/local/pombo ] && rm -fv /var/local/pombo
 echo "Done."
 

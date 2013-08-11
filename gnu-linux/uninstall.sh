@@ -18,7 +18,8 @@ if [ -f /usr/local/bin/pombo.py ]; then
 	echo "« sed -i '\/usr\/local\/bin\/pombo.py/d' /etc/crontab »"
 	sed -i '\/usr\/local\/bin\/pombo.py/d' /etc/crontab
 else
-	rm -fv /usr/local/bin/pombo
+	[ -f /usr/local/bin/pombo ] && rm -fv /usr/local/bin/pombo
+	[ -f /usr/local/sbin/pombo ] && rm -fv /usr/local/sbin/pombo
 	if [ $(grep -c "/usr/local/bin/pombo" /etc/crontab) != 0 ] ; then
 		# Retro-compatibility (version = 0.0.9)
 		echo "« sed -i '/usr/local/bin/pombo/d' /etc/crontab »"
