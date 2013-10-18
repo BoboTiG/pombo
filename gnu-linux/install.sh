@@ -15,9 +15,11 @@ inst_dir=/usr/local/bin
 echo "\nInstalling (verbose) ..."
 [ -f /etc/pombo.conf ] && mv -fv /etc/pombo.conf /etc/pombo.conf.old
 install -v pombo.conf /etc
-chmod 600 -v /etc/pombo.conf
+echo "« chmod 600 /etc/pombo.conf »"
+chmod 600 /etc/pombo.conf
 install -v pombo.py ${inst_dir}/pombo
-chmod +x -v ${inst_dir}/pombo
+echo "« chmod +x ${inst_dir}/pombo »"
+chmod +x ${inst_dir}/pombo
 
 if test -f /etc/crontab ; then
     # Retro-compatibility (version <= 0.0.9)
