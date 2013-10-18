@@ -6,15 +6,15 @@ import sys
 
 ok = False
 for m in ['requests']:
-	try:
-		__import__(m)
-	except Exception as ex:
-		print(' ! python module needed but not installed: %s' % m)
-		ok = True
+    try:
+        __import__(m)
+    except Exception as ex:
+        print(' ! python module needed but not installed: %s' % m)
+        ok = True
 try:
-	from IPy import IP
+    from IPy import IP
 except Exception as ex:
-	print(' ! python module needed but not installed: ipy')
-	ok = True
+    print(' ! python module needed but not installed: ipy')
+    ok = True
 
 sys.exit(ok)
