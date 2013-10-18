@@ -37,9 +37,9 @@ Code quality check:
 '''
 
 
-__version__ = '0.0.11-a3'
+__version__ = '0.0.11-a4'
 __author__  = 'BoboTiG'
-__date__    = '$27-Jun-2013 11:13:57$'
+__date__    = '$18-Oct-2013 12:57:57$'
 
 
 import base64
@@ -75,6 +75,7 @@ try:
     if os.name == 'nt':
         from PIL import Image, ImageGrab
         from VideoCapture import Device
+        from mss import MSSWindows
 except ImportError as ex:
     print(ex)
     sys.exit(1)
@@ -427,7 +428,7 @@ def screenshot(filename):
 
     temp = tempfile.gettempdir()
     LOG.info('Taking screenshot')
-    filepath = '{0}{1}{2}_screenshot.jpg'.format(temp, SEP, filename)
+    filepath = '{0}{1}{2}_screenshot'.format(temp, SEP, filename)
     user = current_user()
     if not user:
         LOG.error('Could not determine current user. Cannot take screenshot.')
@@ -435,11 +436,13 @@ def screenshot(filename):
 
     if OS == 'Windows':
         try:
-            img = ImageGrab.grab(Image.WEB)
-            img.save(filepath, 'JPEG', quality=80)
+            img = MSSWindows()
+            for filename in img.save(output=filepath, oneshot=True):
+                filepath = filename
         except IOError as ex:
             LOG.error(ex)
     else:
+        filepath += '.jpg'
         cmd = CONFIG['screenshot']
         cmd = cmd.replace('<user>', user)
         cmd = cmd.replace('<filepath>', filepath)
