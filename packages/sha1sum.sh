@@ -5,4 +5,7 @@
 
 file=control.sha1
 [ -f $file ] && rm $file
-sha1sum pombo-* >$file
+touch $file
+for package in $(ls pombo-* | sed 's/*//' | sort -V); do
+    sha1sum $package >>$file;
+done
