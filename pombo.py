@@ -90,14 +90,17 @@ URL = 'https://github.com/BoboTiG/pombo'
 UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 
 # Current running OS specifities
-OS      = 'Gnulinux'
+oses = {'Linux': 'Linux', 'Darwin': 'Mac', 'Windows': 'Windows'}
+try:
+    OS = oses[platform.system()]
+except keyError:
+    print('System not implemented.')
+    sys.exit(1)
 SEP     = '/'
 CONF    = '/etc/pombo.conf'
 IPFILE  = '/var/local/pombo'
 LOGFILE = '/var/log/pombo.log'
 if os.name == 'nt':
-    #os.chdir(sys.path[0])
-    OS      = 'Windows'
     SEP     = '\\'
     IPFILE  = 'c:\\pombo\\pombo'
     CONF    = 'c:\\pombo\\pombo.conf'
@@ -211,6 +214,11 @@ def get_manufacturer():
         manufacturer  = res[1].split('=')[1].strip() + ' - '
         manufacturer += res[0].split('=')[1].strip() + ' - '
         manufacturer += res[2].split('=')[1].strip()
+    elif OS == 'Mac':
+        cmd = '/usr/sbin/system_profiler SPHardwareDataType | grep Model'
+        res = runprocess(cmd, useshell=True).strip().split("\n")
+        manufacturer  = res[0].split(': ')[1].strip() + ' - '
+        manufacturer += res[1].split(': ')[1].strip()
     else:
         manufacturer = ''
         for info in [
@@ -231,10 +239,12 @@ def get_serial():
     '''
 
     serial = 'Unknown'
-    cmd = '/usr/sbin/dmidecode --string system-serial-number'
-    if OS == 'Windows':
-        cmd = 'wmic bios get serialnumber /value'
-    res = runprocess(cmd, useshell=True).strip()
+    cmd = {
+        'Linux': '/usr/sbin/dmidecode --string system-serial-number',
+        'Mac': '/usr/sbin/system_profiler SPHardwareDataType | grep system | cut -d: -f2',
+        'Windows': 'wmic bios get serialnumber /value'
+    }
+    res = runprocess(cmd[OS], useshell=True).strip()
     if OS == 'Windows':
         if not res.split('=')[1] == '0':
             serial = res.split('=')[1]

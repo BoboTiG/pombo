@@ -5,10 +5,10 @@
 
 
 *** Windows
-	Execute pombo-x.x.xx_setup.exe.
+    Execute pombo-x.x.xx_setup.exe.
 
-*** GNU/Linux
-	Execute install.sh.
+*** GNU/Linux & Mac
+    Execute install.sh.
 
 
 Questions?

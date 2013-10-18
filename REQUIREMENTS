@@ -5,19 +5,27 @@
 
 
 *** All
-	- One or more distants servers where to put encrypted files
+    - One or more distants servers where to put encrypted files
 
 *** Windows
-	- GnuPT (or GnuPG4Win)
+    - GnuPT (or GnuPG4Win)
 
 *** GNU/Linux
-	- python
-	- python-ipy
-	- python-requests
-	- GnuPG
-	- iw
-	- traceroute
-	- scrot
-	- streamer
-	All of these tools should be into your repositories:
-		Debian based: aptitude install python python-ipy python-requests gnupg net-tools iw traceroute scrot streamer
+    - python
+    - python-ipy
+    - python-requests
+    - GnuPG
+    - iw
+    - traceroute
+    - scrot
+    - streamer
+    All of these tools should be into your repositories:
+        Debian based: aptitude install python python-ipy python-requests gnupg net-tools iw traceroute scrot streamer
+
+*** Mac
+    - python-ipy
+    - python-requests
+    To install these modules: sudo easy_install requests ipy
+    - GnuPG: https://gpgtools.org/
+    - ImageSnap: http://iharder.sourceforge.net/current/macosx/imagesnap/
+
