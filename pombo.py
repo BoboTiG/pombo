@@ -895,24 +895,17 @@ if __name__ == '__main__':
         LOG = logging.getLogger()
         install_log_handlers(logging.WARN)
         print('Pombo {0}'.format(__version__))
-        if sys.argv[1:]:
-            for arg in sys.argv[1:]:
-                if arg == 'add':
-                    pombo_add()
-                elif arg == 'check':
-                    pombo_work(testing=True)
-                elif arg == 'help':
-                    pombo_help()
-                elif arg == 'ip':
-                    pombo_ip()
-                elif arg == 'list':
-                    pombo_list()
-                elif arg == 'update':
-                    pombo_update()
-                elif arg == 'version':
-                    pombo_version()
-                else:
-                    LOG.warn('Unknown argument "%s" - try "help".', arg)
+        if len(sys.argv[1]) > 1:
+            arg = sys.argv[1]
+            if   arg == 'add'    : pombo_add()
+            elif arg == 'check'  : pombo_work(testing=True)
+            elif arg == 'help'   : pombo_help()
+            elif arg == 'ip'     : pombo_ip()
+            elif arg == 'list'   : pombo_list()
+            elif arg == 'update' : pombo_update()
+            elif arg == 'version': pombo_version()
+            else:
+                LOG.warn('Unknown argument "%s" - try "help".', arg)
         else:
             LOG.debug('Log file is %s', LOGFILE)
             pombo_work()
