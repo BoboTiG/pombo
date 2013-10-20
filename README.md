@@ -7,7 +7,6 @@ Theft-recovery tracking opensource software.
 Links:
 
 * [Documentation française](http://bobotig.fr/index.php?c=projets/pombo/)
-* **[Enquête : location d'espace disque pour les rapports de Pombo](https://tiger-222.fr/paste/?1229256f45df63a2#PnVnkLzW/MuFxBqCeKH+hu4rjmZwsIN6yowUoHCb/cY)**
 * [Installation process](http://www.sebsauvage.net/pombo/installation.html)
 * [FAQ](http://www.sebsauvage.net/pombo/faq.html)
 
@@ -20,11 +19,12 @@ What is it ?
 ===
 
 Pombo can help you recover your computer in the event it's stolen.
+It works on Windows, GNU/Linux and Mac OSX.
 
 How does it work ?
 ===
 
-Pombo works silentely in the background, hidden, and sends tracking information to a webserver of your choice.  
+Pombo works silentely in the background, hidden, and sends tracking information to a webserver of your choice.
 
 If your computer is stolen, just log into your webserver to get the lastest file uploaded by Pombo, decrypt and hand it to the police. They will have all they need to catch the thief: IP address, date/time, nearby routers, screenshot, and even a photo of his/her face if you have a webcam !
 
@@ -33,7 +33,6 @@ Pombo protects your privacy: Tracking information is encrypted with rock-solid G
 Features
 ===
 
-* __Simple__: Less than 300 lines of code.
 * __Protects your privacy__: Tracking information is encrypted with a public key before sending, and only you can decrypt it with the corresponding private key.
 * __Secure__: No port to open, and does not permit remote access.
 * __Does not rely on third-party sites/services__: You control the client and the server. You can change servers anytime.
@@ -77,7 +76,7 @@ Requirements
 * The computer to be tracked must run Linux or Windows (not tested on Mac, testers needed;))
 * Software: Python, GnuPG
 * Your GPG public key
-* A website where you can install the php script (php4 or php5) (see the [survey](https://tiger-222.fr/paste/?1229256f45df63a2#PnVnkLzW/MuFxBqCeKH+hu4rjmZwsIN6yowUoHCb/cY))
+* A website where you can install the php script (php4 or php5)
 * A very small GnuPG knowledge
 
 Recommendations
