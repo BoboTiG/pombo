@@ -73,7 +73,7 @@ try:
     from requests.exceptions import ConnectionError, RequestException
     from IPy import IP
     if os.name == 'nt':
-        from PIL import Image, ImageGrab
+        from PIL import Image
         from VideoCapture import Device
         from mss import MSSWindows
 except ImportError as ex:
@@ -90,10 +90,10 @@ URL = 'https://github.com/BoboTiG/pombo'
 UPLINK = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
 
 # Current running OS specifities
-oses = {'Linux': 'Linux', 'Darwin': 'Mac', 'Windows': 'Windows'}
 try:
-    OS = oses[platform.system()]
-except keyError:
+    _OSES = {'Linux': 'Linux', 'Darwin': 'Mac', 'Windows': 'Windows'}
+    OS = _OSES[platform.system()]
+except KeyError:
     print('System not implemented.')
     sys.exit(1)
 SEP     = '/'
@@ -241,7 +241,8 @@ def get_serial():
     serial = 'Unknown'
     cmd = {
         'Linux': '/usr/sbin/dmidecode --string system-serial-number',
-        'Mac': '/usr/sbin/system_profiler SPHardwareDataType | grep system | cut -d: -f2',
+        'Mac': '/usr/sbin/system_profiler SPHardwareDataType '
+            +  '| grep system | cut -d: -f2',
         'Windows': 'wmic bios get serialnumber /value'
     }
     res = runprocess(cmd[OS], useshell=True).strip()
@@ -902,16 +903,22 @@ if __name__ == '__main__':
         install_log_handlers(logging.WARN)
         print('Pombo {0}'.format(__version__))
         if len(sys.argv[1]) > 1:
-            arg = sys.argv[1]
-            if   arg == 'add'    : pombo_add()
-            elif arg == 'check'  : pombo_work(testing=True)
-            elif arg == 'help'   : pombo_help()
-            elif arg == 'ip'     : pombo_ip()
-            elif arg == 'list'   : pombo_list()
-            elif arg == 'update' : pombo_update()
-            elif arg == 'version': pombo_version()
+            if   sys.argv[1] == 'add':
+                pombo_add()
+            elif sys.argv[1] == 'check':
+                pombo_work(testing=True)
+            elif sys.argv[1] == 'help':
+                pombo_help()
+            elif sys.argv[1] == 'ip':
+                pombo_ip()
+            elif sys.argv[1] == 'list':
+                pombo_list()
+            elif sys.argv[1] == 'update':
+                pombo_update()
+            elif sys.argv[1] == 'version':
+                pombo_version()
             else:
-                LOG.warn('Unknown argument "%s" - try "help".', arg)
+                LOG.warn('Unknown argument "%s" - try "help".', sys.argv[1])
         else:
             LOG.debug('Log file is %s', LOGFILE)
             pombo_work()
