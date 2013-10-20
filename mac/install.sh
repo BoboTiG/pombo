@@ -38,7 +38,7 @@ echo "Done."
 echo ""
 echo "Checking dependancies ..."
 ok=1
-for package in python gpg ifconfig iwlist traceroute imagesnap; do
+for package in python gpg ifconfig traceroute imagesnap; do
     test=$(which ${package})
     [ $? != 0 ] && echo " ! ${package} needed but not installed." && ok=0
 done
