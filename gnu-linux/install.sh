@@ -13,7 +13,7 @@ inst_dir=/usr/local/bin
 [ -d ${inst_dir} ] || inst_dir=/usr/local/sbin
 
 echo "\nInstalling (verbose) ..."
-[ -f /etc/pombo.conf ] && mv -fv /etc/pombo.conf /etc/pombo.conf.old
+[ -f /etc/pombo.conf ] && mv -fv /etc/pombo.conf /etc/pombo.conf.$(date '+%s')
 install -v pombo.conf /etc
 echo "« chmod 600 /etc/pombo.conf »"
 chmod 600 /etc/pombo.conf
