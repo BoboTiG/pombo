@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cd "/Volumes/Pombo/data"
+sudo ./install.sh

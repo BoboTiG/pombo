@@ -7,10 +7,14 @@
 *** Windows
     Execute pombo-x.x.xx_setup.exe.
 
-*** GNU/Linux & Mac
+*** GNU/Linux
     Execute install.sh.
 
+*** Mac
+    Mount pombo-x.x.xx.dmg and execute Install.
 
-Questions?
+
+Questions/Ideas/Bugs?
  -> Go to http://www.bobotig.fr/contenu/projets/pombo
+ -> Open an issue on https://github.com/BoboTiG/pombo
  -> Write me to bobotig (at) gmail (dot) com
