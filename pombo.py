@@ -570,8 +570,8 @@ def snapshot(current_ip):
     # Encrypt using gpg with a specified public key
     gpgfilepath = zipfilepath
     if CONFIG['gpgkeyid'] == 'i_dont_wanna_use_encryption_and_i_assume':
+        # You shall not pass!
         LOG.info('Skipping encryption (bad, Bad, BAD ...)')
-        gpgfilepath += '_not-encrypted.gpg'
         os.rename(zipfilepath, gpgfilepath)
     else:
         LOG.info('Encrypting zip with GnuPG')
