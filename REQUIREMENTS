@@ -8,13 +8,13 @@
     - One or more distants servers where to put encrypted files
 
 *** Windows
-    - GnuPT (or GnuPG4Win)
+    - (*) GnuPT (or GnuPG4Win)
 
 *** GNU/Linux
     - python
     - python-ipy
     - python-requests
-    - GnuPG
+    - (*) GnuPG
     - iw
     - traceroute
     - scrot
@@ -26,6 +26,8 @@
     - python-ipy
     - python-requests
     To install these modules: sudo easy_install requests ipy
-    - GnuPG: https://gpgtools.org/
+    - (*) GnuPG: https://gpgtools.org/
     - ImageSnap: http://iharder.sourceforge.net/current/macosx/imagesnap/
 
+
+(*) Not necessary if encryption is disabled, which is not recommended.
