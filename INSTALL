@@ -7,11 +7,8 @@
 *** Windows
     Execute pombo-x.x.xx_setup.exe.
 
-*** GNU/Linux
+*** GNU/Linux & Mac OSX
     Execute install.sh.
-
-*** Mac
-    Mount pombo-x.x.xx.dmg and execute Install.
 
 
 Questions/Ideas/Bugs?
