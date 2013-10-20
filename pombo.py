@@ -51,17 +51,11 @@ import logging
 import os
 import platform
 import re
-import smtplib
 import subprocess
 import sys
 import tempfile
 import time
 import zipfile
-
-
-from email import encoders
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
 
 try:
     import ConfigParser
@@ -463,34 +457,6 @@ def screenshot(filename):
     return filepath
 
 
-def snapshot_email(report_name, filename, data):
-    '''
-        Send the report to the email account.
-    '''
-
-    if not CONFIG['email_id']:
-        LOG.info('Skipping email attachment.')
-        return
-    superman = CONFIG['email_id']
-    LOG.info('Attaching report for %s', superman)
-    msg = MIMEMultipart()
-    msg['Subject'] = '[Pombo report] {0}'.format(report_name)
-    msg['From']    = superman
-    msg['To']      = superman
-    part = MIMEBase('application', 'octet-stream')
-    part.add_header('Content-Disposition', 'attachment; filename="{0}"'
-                    .format(filename))
-    part.set_payload(data)
-    encoders.encode_base64(part)
-    msg.attach(part)
-    try:
-        conn = smtplib.SMTP('localhost')
-        conn.sendmail(superman, superman, msg.as_string())
-        conn.quit()
-    except Exception as ex:
-        LOG.error(ex)
-
-
 def snapshot_sendto_server(filename, filepath, data):
     '''
         Compute authentication token and send the report to all servers.
@@ -593,9 +559,6 @@ def snapshot(current_ip):
 
     # Send to all servers
     snapshot_sendto_server(gpgfilename, gpgfilepath, data)
-
-    # Send to the email account
-    snapshot_email(report_name, gpgfilename, data)
     return
 
 
