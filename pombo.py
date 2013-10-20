@@ -568,15 +568,21 @@ def snapshot(current_ip):
         os.remove(filepath)
 
     # Encrypt using gpg with a specified public key
-    LOG.info('Encrypting zip with GnuPG')
-    runprocess(['gpg', '--batch', '--no-default-keyring',
-                '--trust-model', 'always', '-r',
-                CONFIG['gpgkeyid'], '-e', zipfilepath])
-    os.remove(zipfilepath)
-    gpgfilepath = zipfilepath + '.gpg'
-    if not os.path.isfile(gpgfilepath):
-        LOG.error('GPG encryption failed. Aborting.')
-        return
+    gpgfilepath = zipfilepath
+    if CONFIG['gpgkeyid'] == 'i_dont_wanna_use_encryption_and_i_assume':
+        LOG.info('Skipping encryption (bad, Bad, BAD ...)')
+        gpgfilepath += '_not-encrypted.gpg'
+        os.rename(zipfilepath, gpgfilepath)
+    else:
+        LOG.info('Encrypting zip with GnuPG')
+        runprocess(['gpg', '--batch', '--no-default-keyring',
+                    '--trust-model', 'always', '-r',
+                    CONFIG['gpgkeyid'], '-e', zipfilepath])
+        os.remove(zipfilepath)
+        gpgfilepath += '.gpg'
+        if not os.path.isfile(gpgfilepath):
+            LOG.error('GPG encryption failed. Aborting.')
+            return
 
     # Read GPG file
     fileh = open(gpgfilepath, 'r+b')
