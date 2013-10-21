@@ -26,7 +26,7 @@
     - python-ipy
     - python-requests
     To install these modules: sudo easy_install requests ipy
-    - (*) GnuPG: https://gpgtools.org/
+    - (*) GPGTools: https://gpgtools.org/
     - ImageSnap: http://iharder.sourceforge.net/current/macosx/imagesnap/
 
 
