@@ -23,6 +23,7 @@
     <see Git checkin messages for history>
 
     0.0.1 - first release
+    0.0.2 - add support for python 3 on Windows and GNU/Linux
 
     You can always get the latest version of this module at:
 
@@ -34,7 +35,7 @@
 from __future__ import (unicode_literals, absolute_import,
                         division, print_function)
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __author__ = "Mickaël 'Tiger-222' Schoentgen"
 __copyright__ = '''
     Copyright (c) 2013, Mickaël 'Tiger-222' Schoentgen
@@ -51,8 +52,9 @@ __all__ = ['MSSLinux', 'MSSMac', 'MSSWindows', 'MSSImage']
 
 from ctypes.util import find_library
 from struct import pack
-import zlib
 from platform import system
+import sys
+import zlib
 
 if system() == 'Darwin':
     from Quartz import *
@@ -117,6 +119,9 @@ elif system() == 'Linux':
             ('blue_mask'        , c_ulong)
         ]
 
+    def b(x):
+        return pack(b'<B', x)
+
 elif system() == 'Windows':
     from ctypes import (
         byref, memset, pointer, sizeof, windll,
@@ -152,6 +157,13 @@ elif system() == 'Windows':
             ('bmiHeader', BITMAPINFOHEADER),
             ('bmiColors', DWORD * 3)
         ]
+
+    if sys.version < '3':
+        def b(x):
+            return x
+    else:
+        def b(x):
+            return pack(b'<B', x)
 
 
 
@@ -522,15 +534,15 @@ class MSSLinux(MSS):
         if image is None:
             raise ValueError('MSSLinux: XGetImage() failed.')
 
-        pixels = [None] * (3 * width * height)
+        pixels = [b'0'] * (3 * width * height)
         for x in range(width):
             for y in range(height):
                 pixel = self.XGetPixel(image, x, y)
-                b = pixel & 255
-                g = (pixel & 65280) >> 8
-                r = (pixel & 16711680) >> 16
+                blue = pixel & 255
+                green = (pixel & 65280) >> 8
+                red = (pixel & 16711680) >> 16
                 offset = (x + width * y) * 3
-                pixels[offset:offset+3] = pack(b'3B', r, g, b)
+                pixels[offset:offset+3] = b(red), b(green), b(blue)
         self.XFree(image)
         return b''.join(pixels)
 
@@ -688,7 +700,7 @@ class MSSWindows(MSS):
             offset = total - off
             x = 0
             while x < width - 2:
-                scanlines[off+x:off+x+3] = data[offset+x+2], data[offset+x+1], data[offset+x]
+                scanlines[off+x:off+x+3] = b(data[offset+x+2]), b(data[offset+x+1]), b(data[offset+x])
                 x += 3
         return b''.join(scanlines)
 
