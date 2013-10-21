@@ -865,7 +865,7 @@ if __name__ == '__main__':
         LOG = logging.getLogger()
         install_log_handlers(logging.WARN)
         print('Pombo {0}'.format(__version__))
-        if len(sys.argv[1]) > 1:
+        if len(sys.argv) > 1:
             if   sys.argv[1] == 'add':
                 pombo_add()
             elif sys.argv[1] == 'check':
