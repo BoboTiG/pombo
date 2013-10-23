@@ -37,9 +37,9 @@ Code quality check:
 '''
 
 
-__version__ = '0.0.11-a4'
+__version__ = '0.0.11-a5'
 __author__  = 'BoboTiG'
-__date__    = '$18-Oct-2013 12:57:57$'
+__date__    = '$21-Oct-2013 22:53:57$'
 
 
 import base64
@@ -69,7 +69,7 @@ try:
     if os.name == 'nt':
         from PIL import Image
         from VideoCapture import Device
-        from mss import MSSWindows
+        import mss
 except ImportError as ex:
     print(ex)
     sys.exit(1)
@@ -125,7 +125,8 @@ def config():
         conf = ConfigParser.SafeConfigParser()
         conf.read(CONF)
     except ConfigParser.Error as ex:
-        LOG.error(ex)
+        LOG.exception(ex)
+        sys.exit(1)
 
     # Primary parameters
     CONFIG['gpgkeyid'] = conf.get('General', 'gpgkeyid') or None
@@ -139,7 +140,7 @@ def config():
             LOG.error('Config error: empty %s parameter.', key)
             error = True
     if error:
-        LOG.warn('Pombo has to stop, please check parameters.')
+        LOG.critical('Pombo has to stop, please check parameters.')
         sys.exit(0)
 
     # Secondary parameters (auth., email, commands, ...)
@@ -154,6 +155,7 @@ def config():
     CONFIG['auth_server'] = conf.get('General', 'auth_server') or ''
     CONFIG['auth_user'] = conf.get('General', 'auth_user') or ''
     CONFIG['auth_pswd'] = conf.get('General', 'auth_pswd') or ''
+    CONFIG['gpg_binary'] = conf.get('Commands', 'gpg_binary') or ''
     CONFIG['network_config'] = conf.get('Commands', 'network_config') or ''
     CONFIG['wifi_access_points'] = conf.get('Commands',
                                             'wifi_access_points') or ''
@@ -175,8 +177,8 @@ def config():
 
     # Informations logging
     if not CONFIG['enable_log']:
-        LOG.info('Disabling logger')
-        LOG.handlers = []
+        LOG.info('Disabling console logger')
+        del LOG.handlers[1]
 
 
 def current_user():
@@ -224,6 +226,7 @@ def get_manufacturer():
             res = runprocess(cmd, useshell=True).strip()
             manufacturer += res + ' - '
         manufacturer = manufacturer[:-3]
+    LOG.debug('Manufacturer is %s', manufacturer)
     return manufacturer
 
 
@@ -246,6 +249,7 @@ def get_serial():
     else:
         if not res == 'System Serial Number':
             serial = res
+    LOG.debug('Serial number is %s', serial)
     return serial
 
 
@@ -270,13 +274,15 @@ def hash_string(current_ip):
     return hashlib.sha256(current_ip.encode()).hexdigest()
 
 
-def install_log_handlers(level):
+def install_log_handlers(level=logging.DEBUG):
     '''
         Install LOG handlers: one for the file LOGFILE and one for
         the console.
     '''
+
+    LOG.handlers = []
     LOG.setLevel(level)
-    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(funcName)s::L%(lineno)d %(message)s')
     # Log to file
     file_handler = logging.FileHandler(LOGFILE, 'a')
     file_handler.setLevel(logging.DEBUG)
@@ -284,7 +290,7 @@ def install_log_handlers(level):
     LOG.addHandler(file_handler)
     # Log to console
     steam_handler = logging.StreamHandler()
-    steam_handler.setLevel(logging.DEBUG)
+    steam_handler.setLevel(level)
     LOG.addHandler(steam_handler)
 
 
@@ -310,7 +316,7 @@ def ip_changed(current_ip):
             if hash_string(current_ip) in [i_p.strip() for i_p in prev_ips]:
                 LOG.info('IP has not changed. Aborting.')
                 return False
-            LOG.warn('IP has changed.')
+            LOG.info('IP has changed.')
             return True
     else:
         LOG.info('Skipping check based on IP change.')
@@ -339,7 +345,8 @@ def public_ip():
         try:
             IP(current_ip)
         except ValueError as ex:
-            LOG.warning(ex)
+            LOG.exception(ex)
+            return None
         return current_ip
 
     # Make sure we are connected to the internet:
@@ -371,7 +378,7 @@ def request_url(url, method='get', params=None):
                 verify=ssl_cert_verif, auth=auth, timeout=30)
         ret = req.content.strip().decode()
     except RequestException as ex:
-        LOG.warn(ex)
+        LOG.exception(ex)
     LOG.debug('Content: %s', ret)
     return ret
 
@@ -398,6 +405,7 @@ def runprocess(commandline, useshell=False):
                              % (user,filepath),useshell=True)
     '''
 
+    LOG.debug('{0} & useshell={1}'.format(commandline, useshell))
     try:
         myprocess = subprocess.Popen(commandline,
                                     stdout=subprocess.PIPE,
@@ -410,15 +418,15 @@ def runprocess(commandline, useshell=False):
         if not serr:
             serr = ''
         else:
-            LOG.error(serr)
+            LOG.error('STDERR: %s', serr)
         if sys.version > '3':
             return str(''.join(map(chr, sout)) + "\n" + ''.join(map(chr, serr)))
         else:
             return unicode(sout, ENCODING).encode('utf-8') + \
                     "\n" + unicode(serr, ENCODING).encode('utf-8')
     except subprocess.CalledProcessError as ex:
-        LOG.error('Process failed: %s (%s)', commandline, ex)
-        return ''
+        LOG.error('Process failed: %s', ex)
+    return ''
 
 
 def screenshot(filename):
@@ -441,11 +449,11 @@ def screenshot(filename):
 
     if OS == 'Windows':
         try:
-            img = MSSWindows()
+            img = mss.MSSWindows()
             for filename in img.save(output=filepath, oneshot=True):
                 filepath = filename
-        except IOError as ex:
-            LOG.error(ex)
+        except ValueError as ex:
+            LOG.exception(ex)
     else:
         filepath += '.jpg'
         cmd = CONFIG['screenshot']
@@ -542,14 +550,17 @@ def snapshot(current_ip):
         os.rename(zipfilepath, gpgfilepath)
     else:
         LOG.info('Encrypting zip with GnuPG')
-        runprocess(['gpg', '--batch', '--no-default-keyring',
-                    '--trust-model', 'always', '-r',
-                    CONFIG['gpgkeyid'], '-e', zipfilepath])
-        os.remove(zipfilepath)
+        if CONFIG['gpg_binary'] == '':
+            LOG.critical('The path to the GPG binary is not set. Aborting.')
+            sys.exit(1)
         gpgfilepath += '.gpg'
+        runprocess([CONFIG['gpg_binary'], '--batch', '--no-default-keyring',
+                    '--trust-model', 'always', '-r', CONFIG['gpgkeyid'],
+                    '-o', gpgfilepath, '-e', zipfilepath])
+        os.remove(zipfilepath)
         if not os.path.isfile(gpgfilepath):
-            LOG.error('GPG encryption failed. Aborting.')
-            return
+            LOG.critical('GPG encryption failed. Aborting.')
+            sys.exit(1)
 
     # Read GPG file
     fileh = open(gpgfilepath, 'r+b')
@@ -579,7 +590,7 @@ def stolen():
     for distant in CONFIG['server_url'].split('|'):
         LOG.info('Checking status on %s', distant.split('/')[2])
         if request_url(distant, 'post', parameters) == '1':
-            LOG.warn('<<!>> Stolen computer <<!>>')
+            LOG.info('<<!>> Stolen computer <<!>>')
             return True
     LOG.info('Computer *does not* appear to be stolen.')
     return False
@@ -655,7 +666,7 @@ def webcamshot(filename):
             if not cam:
                 cam = Device(devnum=1)
         except Exception as ex:
-            LOG.error('vidcap.Error: %s', ex)
+            LOG.exception('vidcap.Error: %s', ex)
             return None
         try:
             # Here you can modify the picture resolution
@@ -799,7 +810,8 @@ def pombo_version():
             ver.major, ver.minor, ver.micro))
     if OS == 'Windows':
         print('with VideoCapture {0}'.format(VCVERSION))
-        print('          and PIL {0}'.format(Image.VERSION))
+        print('            & MSS {0}'.format(mss.__version__))
+        print('            & PIL {0}'.format(Image.VERSION))
 
 
 def pombo_work(testing=False):
@@ -810,16 +822,12 @@ def pombo_work(testing=False):
 
     config()
     if testing:
-        if not CONFIG['enable_log']:
-            # Re-install log handlers for testing
-            install_log_handlers(logging.DEBUG)
-        else:
-            LOG.setLevel(logging.DEBUG)
-
+        install_log_handlers(logging.DEBUG)
         LOG.info('[Test] Simulating stolen computer ...')
         current_ip = public_ip()
         if current_ip is None:
             LOG.error('Test cannot continue ...')
+            return
         snapshot(current_ip)
         wait_stolen = CONFIG['time_limit'] // 3
         LOG.info('==> In real scenario, Pombo will send a report each' + \
@@ -863,7 +871,7 @@ if __name__ == '__main__':
 
     try:
         LOG = logging.getLogger()
-        install_log_handlers(logging.WARN)
+        install_log_handlers()
         print('Pombo {0}'.format(__version__))
         if len(sys.argv) > 1:
             if   sys.argv[1] == 'add':
@@ -881,14 +889,14 @@ if __name__ == '__main__':
             elif sys.argv[1] == 'version':
                 pombo_version()
             else:
-                LOG.warn('Unknown argument "%s" - try "help".', sys.argv[1])
+                LOG.warning('Unknown argument "%s" - try "help".', sys.argv[1])
         else:
             LOG.debug('Log file is %s', LOGFILE)
             pombo_work()
             LOG.info('Session terminated.')
     except KeyboardInterrupt:
-        LOG.warn('*** STOPPING operations ***')
+        LOG.warning('*** STOPPING operations ***')
         sys.exit(1)
     except Exception as ex:
-        LOG.critical(ex)
+        LOG.exception(ex)
         raise
