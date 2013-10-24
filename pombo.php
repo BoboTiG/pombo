@@ -5,8 +5,6 @@
 
     error_reporting(0);
     usleep(200000);
-    $PASSWORD  = 'mysecret';
-    $CHECKFILE = '.stolen';
 
     if ( !function_exists('hash_hmac') ) {
         //Calculate HMAC-SHA1 according to RFC2104
@@ -24,15 +22,12 @@
     }
 
     /* Stolen! */
-    if ( ! empty($_GET) ) {
+    if ( !empty($_GET) ) {
         if ( isset($_GET['check']) && $_GET['check'] == $CHECKFILE ) {
             if ( is_file($CHECKFILE) )
                 die('Computer already stolen!');
-            $fh = fopen($CHECKFILE, 'xb');
-            if ( !$fh )
+            if ( ($fh = fopen($CHECKFILE, 'w')) === false )
                 die('Could not create file.');
-            if ( !fwrite($fh, 'Chenapan !') )
-                die('Could not write file.');
             fclose($fh);
             die('File created, pombo will see it and check every 5 minutes.');
         }
@@ -53,12 +48,11 @@
             die('Wrong password!');
         if ( pathinfo($_POST['filename'], 4) != 'gpg' && pathinfo($_POST['filename'], 4) != 'zip' )
             die('Not a gpg file.');
-        if ( !preg_match('/^[a-zA-Z0-9\.\-\_]*$/', $_POST['filename']) )
+        if ( !preg_match('/^[\w\.\-]*$/', $_POST['filename']) )
             die('Invalid characters in filename.');
-        $fh = fopen($_POST['filename'], 'xb');
-        if ( ! $fh )
+        if ( ($fh = fopen($_POST['filename'], 'xb')) === false )
             die('Could not create file.');
-        if ( !fwrite($fh, base64_decode($_POST['filedata'])) )
+        if ( fwrite($fh, base64_decode($_POST['filedata'])) === false )
             die('Could not write file.');
         fclose($fh);
     }
