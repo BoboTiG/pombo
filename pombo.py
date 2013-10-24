@@ -303,24 +303,22 @@ def ip_changed(current_ip):
         # Read previous IP
         if not os.path.isfile(IPFILE):
             LOG.info('First run, writing down IP in "%s".', IPFILE)
-            fileh = open(IPFILE, 'w+b')
-            if sys.version > '3':
-                fileh.write(bytes(hash_string(current_ip), ENCODING))
-            else:
-                fileh.write(hash_string(current_ip))
-            fileh.close()
-        else:
-            fileh = open(IPFILE, 'rb')
-            prev_ips = fileh.readlines()
-            fileh.close()
-            if hash_string(current_ip) in [i_p.strip() for i_p in prev_ips]:
-                LOG.info('IP has not changed. Aborting.')
-                return False
-            LOG.info('IP has changed.')
+            with open(IPFILE, 'w+b') as fileh:
+                if sys.version > '3':
+                    fileh.write(bytes(hash_string(current_ip), ENCODING))
+                else:
+                    fileh.write(hash_string(current_ip))
             return True
+        else:
+            with open(IPFILE, 'rb') as fileh:
+                prev_ips = fileh.readlines()
+            if not hash_string(current_ip) in [i_p.strip() for i_p in prev_ips]:
+                LOG.info('IP has changed.')
+                return True
+            LOG.info('IP has not changed. Aborting.')
     else:
         LOG.info('Skipping check based on IP change.')
-    return True
+    return False
 
 
 def need_report(current_ip):
@@ -839,7 +837,7 @@ def pombo_work(testing=False):
                 wait_normal = 60 * CONFIG['time_limit']
                 wait_stolen = wait_normal // 3
                 current_ip = public_ip()
-                if not current_ip is None and need_report(current_ip):
+                if current_ip and need_report(current_ip):
                     start = time.time()
                     snapshot(current_ip)
                     runtime = time.time() - start
@@ -848,7 +846,7 @@ def pombo_work(testing=False):
                     time.sleep(wait_normal)
         else:
             current_ip = public_ip()
-            if not current_ip is None and need_report(current_ip):
+            if current_ip and need_report(current_ip):
                 wait = 60 * CONFIG['time_limit'] // 3
                 for i in range(1, 4):
                     LOG.info('* Attempt %d/3 *', i)
