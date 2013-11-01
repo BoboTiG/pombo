@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-''' An attempt to create a full functionnal multi-screen shot module
-    in _pure_ python using ctypes.
+''' A cross-platform multi-screen shot module in pure python using ctypes.
 
     This module is maintained by Mickaël Schoentgen <contact@tiger-222.fr>.
     If you find problems, please submit bug reports/patches via the
@@ -11,7 +10,6 @@
     Note: please keep this module compatible to Python 2.6.
 
     Still needed:
-    * support for built-in JPEG format
     * support for additional systems
 
     Many thanks to all those who helped (in no particular order):
@@ -24,10 +22,18 @@
 
     0.0.1 - first release
     0.0.2 - add support for python 3 on Windows and GNU/Linux
+    0.0.3 - MSSImage: remove PNG filters
+          - MSSImage: remove 'ext' argument, using only PNG
+          - MSSImage: do not overwrite existing image files
+          - MSSImage: few optimizations into png()
+          - MSSLinux: few optimizations into get_pixels()
+    0.0.4 - MSSLinux: use of memoization => huge time/operations gains
+    0.0.5 - MSSWindows: few optimizations into _arrange()
+          - MSSImage: code simplified
 
     You can always get the latest version of this module at:
 
-            https://raw.github.com/BoboTiG/python-mss/mss.py
+            https://raw.github.com/BoboTiG/python-mss/master/mss.py
 
     If that URL should fail, try contacting the author.
 '''
@@ -35,7 +41,7 @@
 from __future__ import (unicode_literals, absolute_import,
                         division, print_function)
 
-__version__ = '0.0.2'
+__version__ = '0.0.5'
 __author__ = "Mickaël 'Tiger-222' Schoentgen"
 __copyright__ = '''
     Copyright (c) 2013, Mickaël 'Tiger-222' Schoentgen
@@ -47,22 +53,23 @@ __copyright__ = '''
     in supporting documentation or portions thereof, including
     modifications, that you make.
 '''
-__all__ = ['MSSLinux', 'MSSMac', 'MSSWindows', 'MSSImage']
+__all__ = ['MSSImage', 'MSSLinux', 'MSSMac', 'MSSWindows']
 
 
 from ctypes.util import find_library
 from struct import pack
+from os.path import isfile
 from platform import system
 import sys
 import zlib
 
 if system() == 'Darwin':
     from Quartz import *
-    from LaunchServices import kUTTypeJPEG, kUTTypePNG
+    from LaunchServices import kUTTypePNG
 
 elif system() == 'Linux':
     from os import environ
-    from os.path import expanduser, isfile
+    from os.path import expanduser
     import xml.etree.ElementTree as ET
     from ctypes import byref, cast, cdll
     from ctypes import (
@@ -75,29 +82,29 @@ elif system() == 'Linux':
 
     class XWindowAttributes(Structure):
         _fields_ = [
-            ("x",                     c_int32),
-            ("y",                     c_int32),
-            ("width",                 c_int32),
-            ("height",                c_int32),
-            ("border_width",          c_int32),
-            ("depth",                 c_int32),
-            ("visual",                c_ulong),
-            ("root",                  c_ulong),
-            ("class",                 c_int32),
-            ("bit_gravity",           c_int32),
-            ("win_gravity",           c_int32),
-            ("backing_store",         c_int32),
-            ("backing_planes",        c_ulong),
-            ("backing_pixel",         c_ulong),
-            ("save_under",            c_int32),
-            ("colourmap",             c_ulong),
-            ("mapinstalled",          c_uint32),
-            ("map_state",             c_uint32),
-            ("all_event_masks",       c_ulong),
-            ("your_event_mask",       c_ulong),
-            ("do_not_propagate_mask", c_ulong),
-            ("override_redirect",     c_int32),
-            ("screen",                c_ulong)
+            ('x',                     c_int32),
+            ('y',                     c_int32),
+            ('width',                 c_int32),
+            ('height',                c_int32),
+            ('border_width',          c_int32),
+            ('depth',                 c_int32),
+            ('visual',                c_ulong),
+            ('root',                  c_ulong),
+            ('class',                 c_int32),
+            ('bit_gravity',           c_int32),
+            ('win_gravity',           c_int32),
+            ('backing_store',         c_int32),
+            ('backing_planes',        c_ulong),
+            ('backing_pixel',         c_ulong),
+            ('save_under',            c_int32),
+            ('colourmap',             c_ulong),
+            ('mapinstalled',          c_uint32),
+            ('map_state',             c_uint32),
+            ('all_event_masks',       c_ulong),
+            ('your_event_mask',       c_ulong),
+            ('do_not_propagate_mask', c_ulong),
+            ('override_redirect',     c_int32),
+            ('screen',                c_ulong)
         ]
 
     class XImage(Structure):
@@ -173,8 +180,8 @@ elif system() == 'Windows':
 
 class MSS(object):
     ''' This class will be overloaded by a system specific one.
-    It checkes if there is a class available for the current system.
-    Raise an exception if no one found.
+        It checkes if there is a class available for the current system.
+        Raise an exception if no one found.
     '''
 
     DEBUG = False
@@ -197,22 +204,20 @@ class MSS(object):
             else:
                 print(method + '()', scalar, type(value).__name__, value)
 
-    def save(self, output='mss', oneshot=False, ext='png', ftype=0):
+    def save(self, output='mss', oneshot=False):
         ''' For each monitor, grab a screen shot and save it to a file.
 
             Parameters:
              - output - string - the output filename without extension
-             - oneshot - boolean -grab only one screen shot of all monitors
-             - ext - string - file format to save
-             - ftype - int - PNG filter type (0..4 [slower])
+             - oneshot - boolean - grab only one screen shot of all monitors
 
             This is a generator which returns created files:
-                'output-1.ext',
-                'output-2.ext',
+                'output-1.png',
+                'output-2.png',
                 ...,
-                'output-NN.ext'
+                'output-NN.png'
                 or
-                'output-full.ext'
+                'output-full.png'
         '''
 
         self.debug('save')
@@ -221,8 +226,6 @@ class MSS(object):
         self.monitors = self.enum_display_monitors() or []
 
         self.debug('save', 'oneshot', self.oneshot)
-        self.debug('save', 'extension', ext)
-        self.debug('save', 'filter_type', ftype)
 
         if len(self.monitors) < 1:
             raise ValueError('MSS: no monitor found.')
@@ -237,19 +240,23 @@ class MSS(object):
             else:
                 filename = output + '-' + str(i)
                 i += 1
+            filename += '.png'
 
-            pixels = self.get_pixels(monitor)
-            if pixels is None:
-                raise ValueError('MSS: no data to process.')
+            if not isfile(filename):
+                pixels = self.get_pixels(monitor)
+                if pixels is None:
+                    raise ValueError('MSS: no data to process.')
 
-            if hasattr(self, 'save_'):
-                 img_out = self.save_(output=filename, ext=ext)
+                if hasattr(self, 'save_'):
+                    img_out = self.save_(output=filename)
+                else:
+                    img = MSSImage(pixels, monitor[b'width'], monitor[b'height'])
+                    img_out = img.dump(filename)
+                self.debug('save', 'img_out', img_out)
+                if img_out:
+                    yield img_out
             else:
-                img = MSSImage(pixels, monitor[b'width'], monitor[b'height'])
-                img_out = img.dump(filename, ext=ext, ftype=ftype)
-            self.debug('save', 'img_out', img_out)
-            if img_out is not None:
-                yield img_out
+                yield filename + ' (already exists)'
 
     def enum_display_monitors(self):
         ''' Get positions of all monitors.
@@ -280,7 +287,6 @@ class MSS(object):
             }
 
             Returns a dict with pixels.
-
         '''
         pass
 
@@ -291,7 +297,7 @@ class MSSMac(MSS):
     '''
 
     def init(self):
-        ''' Mac initialisations '''
+        ''' Mac OSX initialisations '''
         self.debug('init')
         pass
 
@@ -306,10 +312,10 @@ class MSSMac(MSS):
         if self.oneshot:
             rect = CGRectInfinite
             results.append({
-                b'left'    : int(rect.origin.x),
-                b'top'     : int(rect.origin.y),
-                b'width'   : int(rect.size.width),
-                b'height'  : int(rect.size.height)
+                b'left'  : int(rect.origin.x),
+                b'top'   : int(rect.origin.y),
+                b'width' : int(rect.size.width),
+                b'height': int(rect.size.height)
             })
         else:
             max_displays = 32  # Peut-être augmenté, si besoin...
@@ -340,35 +346,28 @@ class MSSMac(MSS):
 
         width, height = monitor[b'width'], monitor[b'height']
         left, top = monitor[b'left'], monitor[b'top']
-
         rect = CGRect((left, top), (width, height))
         self.image = CGWindowListCreateImage(
                     rect, kCGWindowListOptionOnScreenOnly,
                     kCGNullWindowID, kCGWindowImageDefault)
         return 1
 
-    def save_(self, output, ext, *args, **kargs):
-        ''' Special method to not use MSSImage class. Speedy. '''
+    def save_(self, output):
+        ''' Special method to not use MSSImage class. '''
 
         self.debug('save_')
 
-        ext = ext.lower()
-        type_ = {'jpg': kUTTypeJPEG, 'jpeg': kUTTypeJPEG, 'png': kUTTypePNG}
-        if ext not in ['jpg', 'jpeg', 'png']:
-            ext = 'png'
-
-        filename = output + '.' + ext
         dpi = 72
-        url = NSURL.fileURLWithPath_(filename)
-        dest = CGImageDestinationCreateWithURL(url, type_[ext], 1, None)
+        url = NSURL.fileURLWithPath_(output)
+        dest = CGImageDestinationCreateWithURL(url, kUTTypePNG, 1, None)
         properties = {
             kCGImagePropertyDPIWidth: dpi,
             kCGImagePropertyDPIHeight: dpi,
         }
         CGImageDestinationAddImage(dest, self.image, properties)
         if not CGImageDestinationFinalize(dest):
-            filename = None
-        return filename
+            output = None
+        return output
 
 
 class MSSLinux(MSS):
@@ -413,9 +412,9 @@ class MSSLinux(MSS):
         display = None
         self.display = None
         try:
-            try:  # python3
+            if sys.version > '3':
                 display = bytes(environ['DISPLAY'], 'utf-8')
-            except TypeError:  # python2
+            else:
                 display = environ['DISPLAY']
         except KeyError:
             err = 'MSSLinux: $DISPLAY not set. Stopping to prevent segfault.'
@@ -534,15 +533,17 @@ class MSSLinux(MSS):
         if image is None:
             raise ValueError('MSSLinux: XGetImage() failed.')
 
-        pixels = [b'0'] * (3 * width * height)
-        for x in range(width):
-            for y in range(height):
-                pixel = self.XGetPixel(image, x, y)
-                blue = pixel & 255
-                green = (pixel & 65280) >> 8
-                red = (pixel & 16711680) >> 16
-                offset = (x + width * y) * 3
-                pixels[offset:offset+3] = b(red), b(green), b(blue)
+        def pix(pixel, _resultats={}):
+            ''' Apply shifts to a pixel to get the RGB values.
+                This method uses of memoization.
+            '''
+            if not pixel in _resultats:
+                _resultats[pixel] = b((pixel & 16711680) >> 16) + b((pixel & 65280) >> 8) + b(pixel & 255)
+            return _resultats[pixel]
+
+        get_pix = self.XGetPixel
+        pixels = [pix(get_pix(image, x, y)) for y in range(height) for x in range(width)]
+
         self.XFree(image)
         return b''.join(pixels)
 
@@ -698,10 +699,8 @@ class MSSWindows(MSS):
         for y in range(height):
             off = width * (y + 1)
             offset = total - off
-            x = 0
-            while x < width - 2:
+            for x in range(0, width - 2, 3):
                 scanlines[off+x:off+x+3] = b(data[offset+x+2]), b(data[offset+x+1]), b(data[offset+x])
-                x += 3
         return b''.join(scanlines)
 
 
@@ -709,205 +708,51 @@ class MSSImage(object):
     ''' This is a class to save data (raw pixels) to a picture file.
     '''
 
-    # Known extensions
-    ext_ok = [
-        #'libjpg',  # ctypes over libjpeg
-        'png',     # pure python PNG implementation
-    ]
-
     def __init__(self, data=None, width=1, height=1):
-        ''' This method is light and should not change. It is like this
-            to allow the call of extensions() without manipulating
-            real data.
-        '''
-
-        if width < 1 or height < 1:
+        if data is None:
+            raise ValueError('MSSImage: no data to process.')
+        elif width < 1 or height < 1:
             raise ValueError('MSSImage: width or height must be positive.')
 
         self.data = data
         self.width = int(width)
         self.height = int(height)
 
-    def extensions(self):
-        ''' List all known and working extensions. '''
-
-        exts = []
-        for ext in self.ext_ok:
-            if hasattr(self, ext):
-                exts.append(ext)
-        return exts
-
-    def dump(self, output=None, ext='png', quality=80, ftype=0):
-        ''' Dump data to the image file using file format specified by ext.
-            Returns to created file name if success, else None.
-        '''
-
-        if self.data is None:
-            raise ValueError('MSSImage: no data to process.')
-
-        self.filename = output
-        self.ext = ext
-        self.quality = max(0, min(int(quality), 100))
-        self.filtertype = max(0, min(int(ftype), 4))
-        contents = None
-
-        if not hasattr(self, self.ext):
-            err = 'MSSImage: {0}() not implemented. '.format(self.ext)
-            err += 'Check MSSImage.extensions() to have more informations.'
-            raise ValueError(err)
-
-        contents = getattr(self, self.ext)()
-        if contents is not None:
-            self.filename += '.' + self.ext
-            with open(self.filename, 'wb') as fileh:
-                fileh.write(contents)
-                return self.filename
-        return None
-
-    def libjpg(self):
-        ''' JPEG implementation using ctypes over libjpeg.
-        '''
-
-        self.ext = 'jpg'
-        print('ctypes over libjpeg still not implemented.')
-        pass
-
-    def png(self):
-        ''' Pure python PNG implementation.
+    def dump(self, output):
+        ''' Dump data to the image file.
+            Pure python PNG implementation.
             Image represented as RGB tuples, no interlacing.
             http://inaps.org/journal/comment-fonctionne-le-png
         '''
 
-        self.ext = 'png'
+        with open(output, 'wb') as fileh:
+            to_take = (self.width * 3 + 3) & -4
+            padding = 0 if to_take % 8 == 0 else (to_take % 8) // 2
+            height, data = self.height, self.data
+            scanlines = [b''.join([b'0', data[to_take*y:to_take*y+to_take-padding]]) for y in range(height)]
 
-        def filter_scanline(ftype, line, fo, prev=None):
-            ''' http://pypng.googlecode.com/svn/trunk/code/png.py
-                Apply a scanline filter to a scanline. `ftype` specifies the
-                filter type (0 to 4); `line` specifies the current (unfiltered)
-                scanline as a sequence of bytes; `prev` specifies the previous
-                (unfiltered) scanline as a sequence of bytes. `fo` specifies the
-                filter offset; normally this is size of a pixel in bytes (the number
-                of bytes per sample times the number of channels), but when this is
-                < 1 (for bit depths < 8) then the filter offset is 1.
-            '''
+            magic = pack(b'>8B', 137, 80, 78, 71, 13, 10, 26, 10)
 
-            scanline = pack(b'B', ftype)
+            # Header: size, marker, data, CRC32
+            ihdr = [b'', b'IHDR', b'', b'']
+            ihdr[2] = pack(b'>2I5B', self.width, self.height, 8, 2, 0, 0, 0)
+            ihdr[3] = pack(b'>I', zlib.crc32(b''.join(ihdr[1:3])) & 0xffffffff)
+            ihdr[0] = pack(b'>I', len(ihdr[2]))
 
-            def sub():
-                out = b''
-                ai = -fo
-                for x in line:
-                    if ai >= 0:
-                        x = (x - line[ai]) & 0xff
-                    out += pack(b'B', x)
-                    ai += 1
-                return out
+            # Data: size, marker, data, CRC32
+            idat = [b'', b'IDAT', b'', b'']
+            idat[2] = zlib.compress(b''.join(scanlines), 9)
+            idat[3] = pack(b'>I', zlib.crc32(b''.join(idat[1:3])) & 0xffffffff)
+            idat[0] = pack(b'>I', len(idat[2]))
 
-            def up():
-                out = b''
-                for i, x in enumerate(line):
-                    x = (x - prev[i]) & 0xff
-                    out += pack(b'B', x)
-                return out
+            # Footer: size, marker, None, CRC32
+            iend = [b'', b'IEND', b'', b'']
+            iend[3] = pack(b'>I', zlib.crc32(iend[1]) & 0xffffffff)
+            iend[0] = pack(b'>I', len(iend[2]))
 
-            def average():
-                out = b''
-                ai = -fo
-                for i, x in enumerate(line):
-                    if ai >= 0:
-                        x = (x - ((line[ai] + prev[i]) >> 1)) & 0xff
-                    else:
-                        x = (x - (prev[i] >> 1)) & 0xff
-                    out += pack(b'B', x)
-                    ai += 1
-                return out
-
-            def paeth():
-                out = b''
-                ai = -fo
-                i = 0
-                for x in line:
-                    a = 0
-                    b = prev[i]
-                    c = 0
-                    if ai >= 0:
-                        a = line[ai]
-                        c = prev[ai]
-
-                    p = a + b - c
-                    pa = abs(p - a)
-                    pb = abs(p - b)
-                    pc = abs(p - c)
-                    if pa <= pb and pa <= pc:
-                        Pr = a
-                    elif pb <= pc:
-                        Pr = b
-                    else:
-                        Pr = c
-
-                    x = (x - Pr) & 0xff
-                    out += pack(b'B', x)
-                    ai += 1
-                    i += 1
-                return out
-
-            if not prev:
-                # We're on the first line.  Some of the filters can be reduced
-                # to simpler cases which makes handling the line "off the top"
-                # of the image simpler.  "up" becomes "none"; "paeth" becomes
-                # "left" (non-trivial, but true). "average" needs to be handled
-                # specially.
-                if ftype == 2: # "up"
-                    return bytes(line) # type = 0
-                elif ftype == 3:
-                    prev = [0] * len(line)
-                elif ftype == 4: # "paeth"
-                    ftype = 1
-            if ftype == 0:
-                scanline += bytes(line)
-            elif ftype == 1:
-                scanline += sub()
-            elif ftype == 2:
-                scanline += up()
-            elif ftype == 3:
-                scanline += average()
-            else: # type == 4
-                scanline += paeth()
-            return scanline
-
-        width, height, data = self.width, self.height, self.data
-
-        to_take = (width * 3 + 3) & -4
-        padding = 0 if to_take % 8 == 0 else (to_take % 8) // 2
-        offset = 0
-        scanlines = b''
-        prev = None
-        for y in range(height):
-            line = bytearray(data[offset:offset+to_take-padding])
-            scanlines += filter_scanline(self.filtertype, line, 3, prev)
-            prev = line
-            offset += to_take
-
-        magic = pack(b'>8B', 137, 80, 78, 71, 13, 10, 26, 10)
-
-        # Header: size, marker, data, CRC32
-        ihdr = [b'', b'IHDR', b'', b'']
-        ihdr[2] = pack(b'>2I5B', width, height, 8, 2, 0, 0, 0)
-        ihdr[3] = pack(b'>I', zlib.crc32(b''.join(ihdr[1:3])) & 0xffffffff)
-        ihdr[0] = pack(b'>I', len(ihdr[2]))
-
-        # Data: size, marker, data, CRC32
-        idat = [b'', b'IDAT', b'', b'']
-        idat[2] = zlib.compress(scanlines, 9)
-        idat[3] = pack(b'>I', zlib.crc32(b''.join(idat[1:3])) & 0xffffffff)
-        idat[0] = pack(b'>I', len(idat[2]))
-
-        # Footer: size, marker, None, CRC32
-        iend = [b'', b'IEND', b'', b'']
-        iend[3] = pack(b'>I', zlib.crc32(iend[1]) & 0xffffffff)
-        iend[0] = pack(b'>I', len(iend[2]))
-
-        return magic + b''.join(ihdr) + b''.join(idat) + b''.join(iend)
+            fileh.write(magic + b''.join(ihdr) + b''.join(idat) + b''.join(iend))
+            return output
+        return None
 
 
 if __name__ == '__main__':
