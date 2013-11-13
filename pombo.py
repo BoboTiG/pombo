@@ -207,9 +207,12 @@ def get_manufacturer():
     if OS == 'Windows':
         cmd = 'wmic csproduct get vendor, name, version /value'
         res = runprocess(cmd, useshell=True).strip().split("\r\n")
-        manufacturer  = res[1].split('=')[1].strip() + ' - '
-        manufacturer += res[0].split('=')[1].strip() + ' - '
-        manufacturer += res[2].split('=')[1].strip()
+        if len(res) < 3:
+            manufacturer = 'Unknown'
+        else:
+            manufacturer  = res[1].split('=')[1].strip() + ' - '
+            manufacturer += res[0].split('=')[1].strip() + ' - '
+            manufacturer += res[2].split('=')[1].strip()
     elif OS == 'Mac':
         cmd = '/usr/sbin/system_profiler SPHardwareDataType | grep Model'
         res = runprocess(cmd, useshell=True).strip().split("\n")
@@ -244,8 +247,9 @@ def get_serial():
     }
     res = runprocess(cmd[OS], useshell=True).strip()
     if OS == 'Windows':
-        if not res.split('=')[1] == '0':
-            serial = res.split('=')[1]
+        res = res.split('=')
+        if not res[0][0:3] == 'ERR' and not res[1] == '0':
+            serial = res[1]
     else:
         if not res == 'System Serial Number':
             serial = res
@@ -376,7 +380,7 @@ def request_url(url, method='get', params=None):
                 verify=ssl_cert_verif, auth=auth, timeout=30)
         ret = req.content.strip().decode()
     except RequestException as ex:
-        LOG.exception(ex)
+        LOG.error(ex)
     LOG.debug('Content: %s', ret)
     return ret
 
@@ -416,6 +420,10 @@ def runprocess(commandline, useshell=False):
         if not serr:
             serr = ''
         else:
+            # As you may think, here we should return something telling that
+            # the command failed, but few tools on Windows use STDERR to
+            # print useful informations, even if the commands run as expected.
+            # So we need keep a track of the false error (if any) and continue.
             LOG.error('STDERR: %s', serr)
         if sys.version > '3':
             return str(''.join(map(chr, sout)) + "\n" + ''.join(map(chr, serr)))
