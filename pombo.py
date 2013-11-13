@@ -106,6 +106,7 @@ ENCODING = sys.stdin.encoding or locale.getdefaultlocale()[1]
 if not ENCODING:
     ENCODING = 'utf-8'
 
+USER    = None
 LOG     = None
 CONFIG  = {}
 PROXIES = {}
@@ -450,8 +451,7 @@ def screenshot(filename):
     temp = tempfile.gettempdir()
     LOG.info('Taking screenshot')
     filepath = '{0}{1}{2}_screenshot'.format(temp, SEP, filename)
-    user = current_user()
-    if not user:
+    if not USER:
         LOG.error('Could not determine current user. Cannot take screenshot.')
         return None
 
@@ -614,7 +614,7 @@ def system_report(current_ip):
     ver = sys.version_info
     LOG.debug('Using python %s.%s.%s', ver.major, ver.minor, ver.micro)
     report  = 'Pombo {0} report'.format(__version__) + separator
-    report += str('Username : ' +  current_user()) + "\n"
+    report += str('Username : ' +  USER) + "\n"
     report += str('Computer : ' +  get_manufacturer()) + "\n"
     report += str('Serial/N : ' +  get_serial()) + "\n"
     report += str('System   : ' +  ' '.join(platform.uname())) + separator
@@ -879,6 +879,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
+        USER = current_user()
         LOG = logging.getLogger()
         install_log_handlers()
         print('Pombo {0}'.format(__version__))
