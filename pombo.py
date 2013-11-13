@@ -196,6 +196,8 @@ def current_user():
                 user = line.split(' ')[0]
                 if '(:0)' in line:
                     break
+    user = user.strip()
+    LOG.debug('Username is %s', user)
     return user
 
 
@@ -612,6 +614,7 @@ def system_report(current_ip):
     ver = sys.version_info
     LOG.debug('Using python %s.%s.%s', ver.major, ver.minor, ver.micro)
     report  = 'Pombo {0} report'.format(__version__) + separator
+    report += str('Username : ' +  current_user()) + "\n"
     report += str('Computer : ' +  get_manufacturer()) + "\n"
     report += str('Serial/N : ' +  get_serial()) + "\n"
     report += str('System   : ' +  ' '.join(platform.uname())) + separator
