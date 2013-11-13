@@ -37,9 +37,9 @@ Code quality check:
 '''
 
 
-__version__ = '0.0.11-a5'
+__version__ = '0.0.11-a6'
 __author__  = 'BoboTiG'
-__date__    = '$21-Oct-2013 22:53:57$'
+__date__    = '$13-Nov-2013 15:12:57$'
 
 
 import base64
@@ -122,6 +122,31 @@ def config():
     '''
 
     LOG.info('Loading configuration')
+    defaults = {
+        'gpgkeyid': None,
+        'password': None,
+        'server_url': None,
+        'check_file': None,
+        'time_limit': 15,
+        'email_id': '',
+        'only_on_ip_change': False,
+        'enable_log': False,
+        'use_proxy': False,
+        'use_env': False,
+        'http_proxy': '',
+        'https_proxy': '',
+        'auth_server': '',
+        'auth_user': '',
+        'auth_pswd': '',
+        'gpg_binary': '',
+        'network_config': '',
+        'wifi_access_points': '',
+        'traceroute': '',
+        'network_trafic': '',
+        'screenshot': '',
+        'camshot': '',
+        'camshot_filetype': ''
+    }
     try:
         conf = ConfigParser.SafeConfigParser()
         conf.read(CONF)
@@ -130,14 +155,14 @@ def config():
         sys.exit(1)
 
     # Primary parameters
-    CONFIG['gpgkeyid'] = conf.get('General', 'gpgkeyid') or None
-    CONFIG['password'] = conf.get('General', 'password') or None
-    CONFIG['server_url'] = conf.get('General', 'server_url') or None
-    CONFIG['check_file'] = conf.get('General', 'check_file') or None
-    CONFIG['time_limit'] = conf.getint('General', 'time_limit') or 15
+    CONFIG['gpgkeyid'] = conf.get('General', 'gpgkeyid')
+    CONFIG['password'] = conf.get('General', 'password')
+    CONFIG['server_url'] = conf.get('General', 'server_url')
+    CONFIG['check_file'] = conf.get('General', 'check_file')
+    CONFIG['time_limit'] = conf.getint('General', 'time_limit')
     error = False
     for key in CONFIG:
-        if CONFIG[key] is None:
+        if not CONFIG[key]:
             LOG.error('Config error: empty %s parameter.', key)
             error = True
     if error:
@@ -145,27 +170,24 @@ def config():
         sys.exit(0)
 
     # Secondary parameters (auth., email, commands, ...)
-    CONFIG['email_id'] = conf.get('General', 'email_id') or ''
-    CONFIG['only_on_ip_change'] = conf.getboolean('General',
-                                            'only_on_ip_change') or False
-    CONFIG['enable_log'] = conf.getboolean('General', 'enable_log') or False
-    CONFIG['use_proxy'] = conf.getboolean('General', 'use_proxy') or False
-    CONFIG['use_env'] = conf.getboolean('General', 'use_env') or False
-    CONFIG['http_proxy'] = conf.get('General', 'http_proxy') or ''
-    CONFIG['https_proxy'] = conf.get('General', 'https_proxy') or ''
-    CONFIG['auth_server'] = conf.get('General', 'auth_server') or ''
-    CONFIG['auth_user'] = conf.get('General', 'auth_user') or ''
-    CONFIG['auth_pswd'] = conf.get('General', 'auth_pswd') or ''
-    CONFIG['gpg_binary'] = conf.get('Commands', 'gpg_binary') or ''
-    CONFIG['network_config'] = conf.get('Commands', 'network_config') or ''
-    CONFIG['wifi_access_points'] = conf.get('Commands',
-                                            'wifi_access_points') or ''
-    CONFIG['traceroute'] = conf.get('Commands', 'traceroute') or ''
-    CONFIG['network_trafic'] = conf.get('Commands', 'network_trafic') or ''
-    CONFIG['network_trafic'] = conf.get('Commands', 'network_trafic') or ''
-    CONFIG['screenshot'] = conf.get('Commands', 'screenshot') or ''
-    CONFIG['camshot'] = conf.get('Commands', 'camshot') or ''
-    CONFIG['camshot_filetype'] = conf.get('Commands', 'camshot_filetype') or ''
+    CONFIG['email_id'] = conf.get('General', 'email_id')
+    CONFIG['only_on_ip_change'] = conf.getboolean('General', 'only_on_ip_change')
+    CONFIG['enable_log'] = conf.getboolean('General', 'enable_log')
+    CONFIG['use_proxy'] = conf.getboolean('General', 'use_proxy')
+    CONFIG['use_env'] = conf.getboolean('General', 'use_env')
+    CONFIG['http_proxy'] = conf.get('General', 'http_proxy')
+    CONFIG['https_proxy'] = conf.get('General', 'https_proxy')
+    CONFIG['auth_server'] = conf.get('General', 'auth_server')
+    CONFIG['auth_user'] = conf.get('General', 'auth_user')
+    CONFIG['auth_pswd'] = conf.get('General', 'auth_pswd')
+    CONFIG['gpg_binary'] = conf.get('Commands', 'gpg_binary')
+    CONFIG['network_config'] = conf.get('Commands', 'network_config')
+    CONFIG['wifi_access_points'] = conf.get('Commands', 'wifi_access_points')
+    CONFIG['traceroute'] = conf.get('Commands', 'traceroute')
+    CONFIG['network_trafic'] = conf.get('Commands', 'network_trafic')
+    CONFIG['screenshot'] = conf.get('Commands', 'screenshot')
+    CONFIG['camshot'] = conf.get('Commands', 'camshot')
+    CONFIG['camshot_filetype'] = conf.get('Commands', 'camshot_filetype')
 
     # Proxies
     if CONFIG['use_proxy']:
@@ -879,8 +901,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
-        USER = current_user()
         LOG = logging.getLogger()
+        USER = current_user()
         install_log_handlers()
         print('Pombo {0}'.format(__version__))
         if len(sys.argv) > 1:
