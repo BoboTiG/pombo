@@ -11,7 +11,6 @@
     - (*) GnuPT (or GnuPG4Win)
 
 *** GNU/Linux
-    - python
     - python-ipy
     - python-requests
     - (*) GnuPG
@@ -20,7 +19,7 @@
     - scrot
     - streamer
     All of these tools should be into your repositories:
-        Debian based: aptitude install python python-ipy python-requests gnupg net-tools iw traceroute scrot streamer
+        Debian based: aptitude install python-ipy python-requests gnupg net-tools iw traceroute scrot streamer
 
 *** Mac OSX
     - python-ipy
