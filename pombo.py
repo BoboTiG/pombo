@@ -794,11 +794,10 @@ def pombo_list():
     if not os.path.isfile(IPFILE):
         print('{0} does not exist!'.format(IPFILE))
     else:
-        fileh = open(IPFILE, 'rb')
-        print('IP hashes in {0}:'.format(IPFILE))
-        for ip_h in fileh.readlines():
-            print('   {0}...{1}'.format(ip_h[:20], ip_h.strip()[-20:]))
-        fileh.close()
+        with open(IPFILE, 'r') as fileh:
+            print('IP hashes in {0}:'.format(IPFILE))
+            for ip_h in fileh.readlines():
+                print('   {0}...{1}'.format(ip_h[:20], ip_h.strip()[-20:]))
 
 
 def pombo_update():
