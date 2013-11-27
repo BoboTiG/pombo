@@ -332,14 +332,11 @@ def ip_changed(current_ip):
         # Read previous IP
         if not os.path.isfile(IPFILE):
             LOG.info('First run, writing down IP in "%s".', IPFILE)
-            with open(IPFILE, 'w+b') as fileh:
-                if sys.version > '3':
-                    fileh.write(bytes(hash_string(current_ip), ENCODING))
-                else:
-                    fileh.write(hash_string(current_ip))
+            with open(IPFILE, 'w+') as fileh:
+                fileh.write(hash_string(current_ip))
             return True
         else:
-            with open(IPFILE, 'rb') as fileh:
+            with open(IPFILE, 'r') as fileh:
                 prev_ips = fileh.readlines()
             if not hash_string(current_ip) in [i_p.strip() for i_p in prev_ips]:
                 LOG.info('IP has changed.')
