@@ -535,12 +535,8 @@ def snapshot(current_ip):
     LOG.info('Filename: %s', report_name)
     LOG.info('Collecting system info')
     filepath = '{0}.txt'.format(os.path.join(temp, report_name))
-    fileh = open(filepath, 'ab')
-    if sys.version > '3':
-        fileh.write(bytes(system_report(current_ip), ENCODING))
-    else:
+    with open(filepath, 'a') as fileh:
         fileh.write(system_report(current_ip))
-    fileh.close()
     filestozip = []
     filestozip.append(filepath)
 
@@ -588,9 +584,8 @@ def snapshot(current_ip):
             sys.exit(1)
 
     # Read GPG file
-    fileh = open(gpgfilepath, 'r+b')
-    data = fileh.read()
-    fileh.close()
+    with open(gpgfilepath, 'r+b') as fileh:
+        data = fileh.read()
     gpgfilename = os.path.basename(gpgfilepath)
 
     # Send to all servers
