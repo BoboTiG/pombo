@@ -146,7 +146,7 @@ def config():
         'camshot_filetype': ''
     }
     try:
-        conf = ConfigParser.SafeConfigParser()
+        conf = ConfigParser.SafeConfigParser(defaults=defaults)
         conf.read(CONF)
     except ConfigParser.Error as ex:
         LOG.exception(ex)
