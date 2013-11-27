@@ -90,15 +90,13 @@ try:
 except KeyError:
     print('System not implemented.')
     sys.exit(1)
-SEP     = '/'
 CONF    = '/etc/pombo.conf'
 IPFILE  = '/var/local/pombo'
 LOGFILE = '/var/log/pombo.log'
 if os.name == 'nt':
-    SEP     = '\\'
     IPFILE  = 'c:\\pombo\\pombo'
     CONF    = 'c:\\pombo\\pombo.conf'
-    LOGFILE = tempfile.gettempdir() + SEP + 'pombo.log'
+    LOGFILE = os.path.join(tempfile.gettempdir(), 'pombo.log')
     VCVERSION = '0.9.5'
 
 # Console encoding
@@ -469,7 +467,7 @@ def screenshot(filename):
 
     temp = tempfile.gettempdir()
     LOG.info('Taking screenshot')
-    filepath = '{0}{1}{2}_screenshot'.format(temp, SEP, filename)
+    filepath = '{0}_screenshot'.format(os.path.join(temp, filename))
     if not USER:
         LOG.error('Could not determine current user. Cannot take screenshot.')
         return None
@@ -536,7 +534,7 @@ def snapshot(current_ip):
     # Create the system report (IP, date/hour...)
     LOG.info('Filename: %s', report_name)
     LOG.info('Collecting system info')
-    filepath = '{0}{1}{2}.txt'.format(temp, SEP, report_name)
+    filepath = '{0}.txt'.format(os.path.join(temp, report_name))
     fileh = open(filepath, 'ab')
     if sys.version > '3':
         fileh.write(bytes(system_report(current_ip), ENCODING))
@@ -559,7 +557,7 @@ def snapshot(current_ip):
     # Zip files:
     LOG.info('Zipping files')
     os.chdir(temp)
-    zipfilepath = '{0}{1}{2}.zip'.format(temp, SEP, report_name)
+    zipfilepath = '{0}.zip'.format(os.path.join(temp, report_name))
     fileh = zipfile.ZipFile(zipfilepath, 'w', zipfile.ZIP_DEFLATED)
     for filepath in filestozip:
         fileh.write(os.path.basename(filepath))
@@ -688,7 +686,7 @@ def webcamshot(filename):
     temp = tempfile.gettempdir()
     LOG.info('Taking webcamshot')
     if OS == 'Windows':
-        filepath = '{0}{1}{2}_webcam.jpg'.format(temp, SEP, filename)
+        filepath = '{0}_webcam.jpg'.format(os.path.join(temp, filename))
         try:
             cam = Device(devnum=0)
             if not cam:
@@ -706,14 +704,14 @@ def webcamshot(filename):
             LOG.error(ex)
             return None
     else:
-        filepath = '{0}{1}{2}_webcam.{3}'.format(temp, SEP, filename,
+        filepath = '{0}_webcam.{1}'.format(os.path.join(temp, filename),
                     CONFIG['camshot_filetype'])
         cmd = CONFIG['camshot'].replace('<filepath>', filepath)
         runprocess(cmd, useshell=True)
         if os.path.isfile(filepath):
             if CONFIG['camshot_filetype'] == 'ppm':
-                new_filepath = '{0}{1}{2}_webcam.jpg'.format(
-                                temp, SEP, filename)
+                new_filepath = '{0}_webcam.jpg'.format(
+                                os.path.join(temp, filename))
                 runprocess(['/usr/bin/convert', filepath, new_filepath])
                 os.unlink(filepath)
                 filepath = new_filepath
