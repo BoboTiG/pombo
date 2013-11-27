@@ -37,9 +37,9 @@ Code quality check:
 '''
 
 
-__version__ = '0.0.11-a6'
+__version__ = '0.0.11-a7'
 __author__  = 'BoboTiG'
-__date__    = '$13-Nov-2013 15:12:57$'
+__date__    = '$26-Nov-2013 14:04:57$'
 
 
 import base64
@@ -814,19 +814,17 @@ def pombo_update():
         print(' . Please check later.')
         return
     version = req.content.strip().decode()
-    if version != __version__:
-        if re.match('^\d{1,}.\d{1}.\d{1,}$', version):
-            print(' + Yep! A new version is available: {0}'.format(version))
-            print(' - Check {0} for upgrade.'.format(URL))
-        elif re.match('^\d{1,}.\d{1}.\d{1,}-', version):
-            typever = 'Alpha'
-            if 'b' in version:
-                typever = 'Beta'
-            print(' - {0} version available: {1}'.format(typever, version))
+    if version > __version__:
+        if 'a' in version or 'b' in version:
+            print(' - Developement version available: {0}'.format(version))
             print(' . You should upgrade only for tests purpose!')
             print(' - Check {0}'.format(URL))
-            print('   and report issues/ideas on GitHub or at ' + \
-                    'bobotig (at) gmail (dot) com.')
+            print('   and report issues/ideas on GitHub')
+        else:
+            print(' + Yep! A new version is available: {0}'.format(version))
+            print(' - Check {0} for upgrade.'.format(URL))
+    if version < __version__:
+        print('Ouhou! It seems that you are in advance on your time ;)')
     else:
         print('Version is up to date!')
 
