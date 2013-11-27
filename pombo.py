@@ -484,7 +484,7 @@ def screenshot(filename):
     else:
         filepath += '.jpg'
         cmd = CONFIG['screenshot']
-        cmd = cmd.replace('<user>', user)
+        cmd = cmd.replace('<user>', USER)
         cmd = cmd.replace('<filepath>', filepath)
         runprocess(cmd, useshell=True)
     if not os.path.isfile(filepath):
