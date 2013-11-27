@@ -7,7 +7,7 @@ Theft-recovery tracking opensource software
 http://bobotig.fr/?c=projets/pombo
 http://sebsauvage.net/pombo
 
-This program is distributed under the os_nameI-certified zlib/libpnglicense .
+This program is distributed under the OSI-certified zlib/libpnglicense .
 http://www.opensource.org/licenses/zlib-license.php
 
 This software is provided 'as-is', without any express or implied warranty.
@@ -131,7 +131,7 @@ class Pombo(object):
     user     = None
     log      = None
     testing  = False
-    configuration   = {}
+    configuration = {}
     vc_version = '0.9.5'
 
 
@@ -148,8 +148,8 @@ class Pombo(object):
             sys.exit(1)
 
         if self.os_name == 'Windows':
-            self.ip_file  = 'c:\\pombo\\pombo'
-            self.conf    = 'c:\\pombo\\pombo.conf'
+            self.ip_file = 'c:\\pombo\\pombo'
+            self.conf = 'c:\\pombo\\pombo.conf'
             self.log_file = os.path.join(gettempdir(), 'pombo.log')
 
         self.testing = bool(testing)
