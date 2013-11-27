@@ -741,20 +741,15 @@ def pombo_add():
     known = False
     if os.path.isfile(IPFILE):
         # Read previous IP
-        fileh = open(IPFILE, 'rb')
-        previous_ips = fileh.readlines()
-        fileh.close()
-        if hash_string(current_ip) in [s.strip() for s in previous_ips]:
-            print('IP already known.')
-            known = True
-    if known is False:
-        print('Adding current ip {0} to {1}.'.format(current_ip, IPFILE))
-        fileh = open(IPFILE, 'a+b')
-        if sys.version > '3':
-            fileh.write(bytes(hash_string(current_ip) + "\n", ENCODING))
-        else:
+        with open(IPFILE, 'r') as fileh:
+            previous_ips = fileh.readlines()
+            if hash_string(current_ip) in [s.strip() for s in previous_ips]:
+                print('IP already known.')
+                known = True
+    if not known:
+        print('Adding current ip {0} to {1}'.format(current_ip, IPFILE))
+        with open(IPFILE, 'a+') as fileh:
             fileh.write(hash_string(current_ip) + "\n")
-        fileh.close()
 
 
 def pombo_help():
