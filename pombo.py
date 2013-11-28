@@ -42,7 +42,6 @@ __author__  = 'BoboTiG'
 __date__    = '$27-Nov-2013 12:17:57$'
 
 
-import base64
 import hashlib
 import hmac
 import logging
@@ -52,6 +51,7 @@ import subprocess
 import sys
 import time
 import zipfile
+from base64 import b64encode
 from datetime import datetime
 from locale import getdefaultlocale
 from tempfile import gettempdir
@@ -534,7 +534,7 @@ class Pombo(object):
             Compute authentication token and send the report to all servers.
         '''
 
-        filedata = base64.b64encode(data)
+        filedata = b64encode(data)
         filesize = file_size(filepath)
         os.remove(filepath)
         key = self.configuration['password']
