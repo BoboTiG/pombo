@@ -1,0 +1,131 @@
+commit 368d23a6ab787ec0140e9d5c0d201bdfca1b7517
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Thu Jul 11 14:49:49 2013 +0200
+
+    Many little changes, New contributor: Romain 'tsyr2ko' Carbonnel. Thank you!
+
+commit 0bd76c2633757e2131b447e94765e1dc9a4eb22c
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Wed Jun 12 12:54:56 2013 +0200
+
+    Fix one webcamshot command
+
+commit 3235cbb0fd12e062ce7c69d02beec79e793bb0c2
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Thu Jun 6 17:48:15 2013 +0200
+
+    Windows: new action toolbar 'Folder', updated packages
+
+commit 4abf562e5c29bb7ddeb50e9fb4463b11f671ffcf
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Thu Jun 6 15:48:26 2013 +0200
+
+    Remove SVG files
+
+commit a812f3c794ee52a99a764f538f7c46d40e393e14
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Wed Jun 5 18:37:38 2013 +0200
+
+    Re-enable 'IP change', add new command for webcamshot
+
+commit 7be656f2688096bec246f97a12715d78ee17fc6c
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Tue Jun 4 01:30:44 2013 +0200
+
+    Remove 'IP change', add 'Email ID'
+
+commit 0031e67dd5ba4c25313fc9c8d60e008cea6a860e
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Mon Jun 3 16:36:00 2013 +0200
+
+    Add --version argument, few changes here and there
+
+commit 1476b307022ecf2d954b33c346edfea4eb88f50a
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Mon Jun 3 16:10:10 2013 +0200
+
+    Add buton to select predefined commands for screenshot and webcamshot; add Stéphane Jouin to the contributors, thank you :)
+
+commit 13ec1cf38ec171f1f95f14a6c4884542a376a68b
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Mon Jun 3 14:52:11 2013 +0200
+
+    Add compatibility with Qt5
+
+commit 125bcc70f803315be7a8d3c1a1248c926bc84a82
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sun Jun 2 01:26:47 2013 +0200
+
+    Update Windows package and add GNU/Linux x64 one
+
+commit 85c2a9c6f085bb432a2364cbf0baf061d2a18997
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sun Jun 2 01:06:35 2013 +0200
+
+    Add buton to restore the default command line
+
+commit 2043ef254ef942110d761c228194fd7e003ffc01
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sun Jun 2 00:42:28 2013 +0200
+
+    Change the password line édition 'echo mode'
+
+commit 71c4c43300a3a6e77d3afc2691ef7e11cb83c113
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sat Jun 1 11:09:03 2013 +0200
+
+    More screenshots into README
+
+commit d8ec0307ad76f746304dd977f7b65dc346b0f9c3
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sat Jun 1 11:01:59 2013 +0200
+
+    More information into README
+
+commit 0498cbbac147dfbdf02ac8a5ff0e0c5669497817
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sat Jun 1 11:01:24 2013 +0200
+
+    Add SHA1 sum control
+
+commit 4de547a450afa5dc80b5eb08f54ecf6c4d56e7fd
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sat Jun 1 02:12:46 2013 +0200
+
+    Add screenshot into README - the right way!
+
+commit 1fefe326ca60edcc01c9250eaa48ed7e33dc63db
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sat Jun 1 02:11:10 2013 +0200
+
+    Add screenshot into README - the right way??
+
+commit dd16fae1169c036935bde8654f9363d1f7d704e3
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sat Jun 1 02:09:07 2013 +0200
+
+    Add screenshot into README - the right way?
+
+commit dfd68725663753eb37a20b08f8b4c99a7181401c
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sat Jun 1 01:59:08 2013 +0200
+
+    Add screenshot into README
+
+commit 5cb5d3bd225a414da6a27ced0d3718b68aa048cc
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sat Jun 1 01:48:44 2013 +0200
+
+    Add windows binaries
+
+commit 7683fe753621f17f05972054e804198acfa4b825
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Sat Jun 1 01:46:46 2013 +0200
+
+    First commit: full functional on Windows 32/64 bits and GNU/Linux 32/64bits
+
+commit db7b261a1f1488123c203e735345179a48033372
+Author: BoboTiG <bobotig@gmail.com>
+Date:   Fri May 31 13:59:32 2013 -0700
+
+    Initial commit
