@@ -1,3 +1,10 @@
 *.pyc
 archives/
 .fuse_hidden*
+
+# GUI
+gui/bin/
+gui/build/
+pombo-config.pro.user
+update-translations.sh
+*.autosave

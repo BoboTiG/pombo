@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>res/exit.png</file>
+        <file>res/save.png</file>
+        <file>res/www.png</file>
+        <file>res/important.png</file>
+        <file>res/pombo.png</file>
+        <file>res/undo.png</file>
+        <file>res/select.png</file>
+        <file>res/folder.png</file>
+    </qresource>
+</RCC>
