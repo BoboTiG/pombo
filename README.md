@@ -73,7 +73,7 @@ What is provided
 Requirements
 ===
 
-* The computer to be tracked must run Linux or Windows (not tested on Mac, testers needed;))
+* The computer to be tracked must run GNU/Linux, Mac OSX or Windows
 * Software: Python, GnuPG
 * Your GPG public key
 * A website where you can install the php script (php4 or php5)
