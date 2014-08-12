@@ -5,6 +5,8 @@
 
     error_reporting(0);
     usleep(200000);
+    $PASSWORD  = '<The same value as in pombo.conf.>';
+    $CHECKFILE = '<The same value as in pombo.conf.>';
 
     if ( !function_exists('hash_hmac') ) {
         //Calculate HMAC-SHA1 according to RFC2104
