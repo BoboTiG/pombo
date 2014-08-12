@@ -2,13 +2,13 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Pombo"
-#define MyAppVersion "0.0.10"
+#define MyAppVersion "0.0.11"
 #define MyAppPublisher "BoboTiG"
 #define MyAppURL "http://bobotig.fr"
 
 ; Constante perso pour définir le dossier dans lequel se trouve le
 ; dossier pombo-$version.
-#define MyAppSDir "C:\pombo-dev\"
+#define MyAppSDir "D:\pombo-dev\"
 
 ; Version présentent dans cet installeur
 #define PythonVersion "2.7.5"
@@ -19,7 +19,7 @@
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{D24DCF9D-1F2E-4846-A4DF-0A41E13E4472}
-AppCopyright=Copyleft 2012-2013 {#MyAppPublisher}
+AppCopyright=Copyleft 2012-2014 {#MyAppPublisher}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName}
@@ -33,75 +33,76 @@ DefaultGroupName={#MyAppName}
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 InfoAfterFile={#MyAppSDir}pombo-{#MyAppVersion}\POSTINSTALL
-LicenseFile={#MyAppSDir}\pombo-{#MyAppVersion}\LICENSE
+LicenseFile={#MyAppSDir}pombo-{#MyAppVersion}\doc\LICENSE
 OutputDir={#MyAppSDir}\pombo-{#MyAppVersion}
 OutputBaseFilename=pombo-{#MyAppVersion}_setup
-SolidCompression=yes
-SetupIconFile={#MyAppSDir}\pombo-{#MyAppVersion}\pombo.ico
+SolidCompression=no
+SetupIconFile={#MyAppSDir}pombo-{#MyAppVersion}\pombo.ico
 ChangesEnvironment=true
-;UninstallDisplayIcon={#MyAppSDir}\pombo-{#MyAppVersion}\pombo.ico
-;UninstallDisplayName={#MyAppName} {#MyAppVersion}
 ; Empêcher l'apparition du programme dans Ajouter/Suprrimer des programmes
 CreateUninstallRegKey=no
+Uninstallable=no
+SetupLogging=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 
+[CustomMessages]
+; Français
+french.marque_title=Mode furtif
+french.marque_texte=Sélectionnez le modèle qui correspond le plus à votre matériel afin de personnaliser le mode furtif.
+french.marque_memo=Modèle sélectionné pour le mode furtif :
+french.type_full=Installation complète
+french.type_custom=Installation personnalisée
+french.install_wlandump=WLAN Dump pour lister les signaux Wi-Fi sous Windows XP
+
+; Anglais
+english.marque_title=Stealth mode 
+english.marque_texte=Select the model which best correspond with your hardware to customise the stealth mode.
+english.marque_memo=Selected model for the stealth mode:
+english.type_full=Full installation
+english.type_custom=Custom installation
+english.install_wlandump=WLAN Dump for listing wireless networks on Windows XP
+
 [Types]
-Name: "full"; Description: "Full installation"
-Name: "custom"; Description: "Custom installation"; Flags: iscustom
+Name: "full"; Description: "{cm:type_full}"
+Name: "custom"; Description: "{cm:type_custom}"; Flags: iscustom
 
 [Components]
 Name: "program"; Description: "Pombo {#MyAppVersion}"; Types: full custom; Flags: fixed
-Name: "gpg"; Description: "GnuPG {#GnuPGVersion}"; Types: full
-Name: "python"; Description: "Python {#PythonVersion} and needed modules"; Types: full
-Name: "xp"; Description: "WLAN Dump for listing wireless networks on Windows XP"; Types: custom
-
-[Tasks]
-Name: modifypath; Description: &Add application directory to your environmental path; Flags: restart; Components: gpg xp
+Name: "gpg"; Description: "GnuPG {#GnuPGVersion}"; Types: full custom; Flags: fixed
+Name: "xp"; Description: "{cm:install_wlandump}"; Types: custom
 
 [Dirs]
 Name: "{app}"; Attribs: hidden system
-Name: "{app}\bin"; Components: gpg xp
-Name: "{app}\doc"; Components: program
-Name: "{app}\python"; Components: python
+Name: "{app}\bin"
+Name: "{app}\doc"
+Name: "{app}\python"
 
 [Files]
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\add-ip.bat"; DestDir: "{app}"; Flags: ignoreversion; Components: program
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\gpg.exe"; DestDir: "{app}\bin"; Flags: ignoreversion; Components: gpg
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\iconv.dll"; DestDir: "{app}\bin"; Flags: ignoreversion; Components: gpg
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\gpg.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\iconv.dll"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\wlan.exe"; DestDir: "{app}\bin"; Flags: ignoreversion; Components: xp
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\wlan-dump.bat"; DestDir: "{app}\bin"; Flags: ignoreversion; Components: xp
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\CREDITS"; DestDir: "{app}\doc"; Flags: ignoreversion; Components: program
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\INSTALL"; DestDir: "{app}\doc"; Flags: ignoreversion; Components: program
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\LICENSE"; DestDir: "{app}\doc"; Flags: ignoreversion; Components: program
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.conf"; DestDir: "{app}"; Flags: confirmoverwrite; Components: program; Attribs: hidden system
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.php"; DestDir: "{app}"; Flags: ignoreversion; Components: program
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.py"; DestDir: "{app}"; Flags: ignoreversion; Components: program;
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.vbs"; DestDir: "{app}"; Flags: ignoreversion; Components: program
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\python\*"; DestDir: "{app}\python"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: python
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\REQUIREMENTS"; DestDir: "{app}\doc"; Flags: ignoreversion; Components: program
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\test-pombo.bat"; DestDir: "{app}"; Flags: ignoreversion; Components: program
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\update-pombo.bat"; DestDir: "{app}"; Flags: ignoreversion; Components: program
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\VERSION"; DestDir: "{app}\doc"; Flags: ignoreversion; Components: program
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\doc\CREDITS"; DestDir: "{app}\doc"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\doc\INSTALL"; DestDir: "{app}\doc"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\doc\LICENSE"; DestDir: "{app}\doc"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.conf"; DestDir: "{app}"; Flags: confirmoverwrite; Attribs: hidden system
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.php"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.py"; DestDir: "{app}"; Flags: ignoreversion; Attribs: hidden system
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.vbs"; DestDir: "{sys}"; DestName: "{code:GetTheMarkLower}-config.vbs"; Attribs: hidden system
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\Pombo - Add IP.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\Pombo - Test.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\Pombo - Update.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\python\*"; DestDir: "{app}\python"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\doc\REQUIREMENTS"; DestDir: "{app}\doc"; Flags: ignoreversion
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\VERSION"; DestDir: "{app}\doc"; Flags: ignoreversion
 
 [Registry]
 ; Lancement de Pombo au démarrage
-Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Pombo"; ValueData: "{app}\pombo.vbs"; Flags: uninsdeletevalue; Components: program
-
-; Fichier à supprimer lors de la désinstallation (si non présents lors de l'installation)
-[UninstallDelete]
-Type: filesandordirs; Name: "{app}"
+Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{code:GetTheMark} Configuration"; ValueData: "{sys}\{code:GetTheMarkLower}-config.vbs"
 
 [Code]
-; Ajout de C:\pombo\bin au PATH, si besoin
-const
-  ModPathName = 'modifypath';
-  ModPathType = 'system';
-function ModPathDir(): TArrayOfString;
-begin
-	setArrayLength(Result, 1);
-	Result[0] := ExpandConstant('{app}\bin');
-end;
-#include "modpath.iss"
+{ Ajout de la page pour sélectionner le modèle }
+#include "getmark.iss"
