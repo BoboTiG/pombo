@@ -43,9 +43,7 @@ InfoAfterFile={#MyAppSDir}pombo-{#MyAppVersion}\POSTINSTALL
 LicenseFile={#MyAppSDir}pombo-{#MyAppVersion}\doc\LICENSE
 OutputDir={#MyAppSDir}\pombo-{#MyAppVersion}
 OutputBaseFilename=pombo-{#MyAppVersion}{#Custom}_setup
-SolidCompression=no
 SetupIconFile={#MyAppSDir}pombo-{#MyAppVersion}\pombo.ico
-ChangesEnvironment=true
 ; Empêcher l'apparition du programme dans Ajouter/Suprrimer des programmes
 CreateUninstallRegKey=no
 Uninstallable=no
@@ -78,7 +76,7 @@ Name: "custom"; Description: "{cm:type_custom}"; Flags: iscustom
 
 [Components]
 Name: "program"; Description: "Pombo {#MyAppVersion}"; Types: full custom; Flags: fixed
-Name: "gpg"; Description: "GnuPG {#GnuPGVersion}"; Types: full custom; Flags: fixed
+Name: "gpg"; Description: "GnuPG {#GnuPGVersion}"; Types: full
 Name: "xp"; Description: "{cm:install_wlandump}"; Types: custom
 
 [Dirs]
@@ -99,6 +97,7 @@ Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo{#Custom}.conf"; DestDir: "{app}
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.php"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.py"; DestDir: "{app}"; Flags: ignoreversion; Attribs: hidden system
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.vbs"; DestDir: "{pf}\{code:GetTheMarkLower}"; DestName: "{code:GetTheMarkLower}-config.vbs"; Flags: ignoreversion; Attribs: hidden system
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\empty"; DestDir: "{app}"; DestName: "{code:GetTheMarkLower}.stealth"; Flags: ignoreversion; Attribs: hidden system
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\Pombo - Add IP.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\Pombo - Test.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\Pombo - Update.bat"; DestDir: "{app}"; Flags: ignoreversion
