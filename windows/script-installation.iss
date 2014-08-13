@@ -8,8 +8,8 @@
 
 ; Constante pour créer un installeur personnalisé.
 ; Ceci permet de déployer facilement le logiciel chez un client.
-; ex : "-fanny" pour pombo-fanny.conf et pombo-$version-fanny_setup.exe
-; ex : "-CL00057-lenovo" pour pombo-CL00057-lenovo.conf et pombo-$version-CL00057-lenovo_setup.exe
+; ex : "-fanny" pour pombo-fanny.conf, POSTINSTALL-fanny.txt et pombo-$version-fanny_setup.exe
+; ex : "-CL00057-lenovo" pour pombo-CL00057-lenovo.conf, POSTINSTALL-CL00057-lenovo.txt et pombo-$version-CL00057-lenovo_setup.exe
 ; Laisser vide par défaut.
 #define Custom ""
 
@@ -38,12 +38,15 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName=C:\pombo
 DefaultGroupName={#MyAppName}
 DisableDirPage=yes
+DisableReadyPage=yes
 DisableProgramGroupPage=yes
-InfoAfterFile={#MyAppSDir}pombo-{#MyAppVersion}\POSTINSTALL
+InfoAfterFile={#MyAppSDir}pombo-{#MyAppVersion}\POSTINSTALL{#Custom}.txt
 LicenseFile={#MyAppSDir}pombo-{#MyAppVersion}\doc\LICENSE
 OutputDir={#MyAppSDir}\pombo-{#MyAppVersion}
 OutputBaseFilename=pombo-{#MyAppVersion}{#Custom}_setup
 SetupIconFile={#MyAppSDir}pombo-{#MyAppVersion}\pombo.ico
+WizardImageFile={#MyAppSDir}pombo-{#MyAppVersion}\pombo-wizard.bmp
+WizardSmallImageFile={#MyAppSDir}pombo-{#MyAppVersion}\pombo-wizard-small.bmp
 ; Empêcher l'apparition du programme dans Ajouter/Suprrimer des programmes
 CreateUninstallRegKey=no
 Uninstallable=no
@@ -61,6 +64,7 @@ french.marque_memo=Modèle sélectionné pour le mode furtif :
 french.type_full=Installation complète
 french.type_custom=Installation personnalisée
 french.install_wlandump=WLAN Dump pour lister les signaux Wi-Fi sous Windows XP
+french.testing=Test du bon fonctionnement de Pombo
 
 ; Anglais
 english.marque_title=Stealth mode
@@ -69,6 +73,7 @@ english.marque_memo=Selected model for the stealth mode:
 english.type_full=Full installation
 english.type_custom=Custom installation
 english.install_wlandump=WLAN Dump for listing wireless networks on Windows XP
+english.testing=Test Pombo
 
 [Types]
 Name: "full"; Description: "{cm:type_full}"
@@ -112,3 +117,6 @@ Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 [Code]
 { Ajout de la page pour sélectionner le modèle }
 #include "getmark.iss"
+
+[Run]
+Filename: "{app}\Pombo - Test.bat"; Parameters: "/silent"; Description: "{cm:testing}"; Flags: postinstall
