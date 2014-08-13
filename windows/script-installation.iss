@@ -6,6 +6,13 @@
 #define MyAppPublisher "JMSinfo"
 #define MyAppURL "http://jmsinfo.co"
 
+; Constante pour créer un installeur personnalisé.
+; Ceci permet de déployer facilement le logiciel chez un client.
+; ex : "-fanny" pour pombo-fanny.conf et pombo-$version-fanny_setup.exe
+; ex : "-CL00057-lenovo" pour pombo-CL00057-lenovo.conf et pombo-$version-CL00057-lenovo_setup.exe
+; Laisser vide par défaut.
+#define Custom ""
+
 ; Constante perso pour définir le dossier dans lequel se trouve le
 ; dossier pombo-$version.
 #define MyAppSDir "D:\pombo-dev\"
@@ -35,7 +42,7 @@ DisableProgramGroupPage=yes
 InfoAfterFile={#MyAppSDir}pombo-{#MyAppVersion}\POSTINSTALL
 LicenseFile={#MyAppSDir}pombo-{#MyAppVersion}\doc\LICENSE
 OutputDir={#MyAppSDir}\pombo-{#MyAppVersion}
-OutputBaseFilename=pombo-{#MyAppVersion}_setup
+OutputBaseFilename=pombo-{#MyAppVersion}{#Custom}_setup
 SolidCompression=no
 SetupIconFile={#MyAppSDir}pombo-{#MyAppVersion}\pombo.ico
 ChangesEnvironment=true
@@ -88,10 +95,10 @@ Source: "{#MyAppSDir}pombo-{#MyAppVersion}\bin\wlan-dump.bat"; DestDir: "{app}\b
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\doc\CREDITS"; DestDir: "{app}\doc"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\doc\INSTALL"; DestDir: "{app}\doc"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\doc\LICENSE"; DestDir: "{app}\doc"; Flags: ignoreversion
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.conf"; DestDir: "{app}"; Flags: confirmoverwrite; Attribs: hidden system
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo{#Custom}.conf"; DestDir: "{app}"; DestName: "pombo.conf"; Flags: confirmoverwrite; Attribs: hidden system
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.php"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.py"; DestDir: "{app}"; Flags: ignoreversion; Attribs: hidden system
-Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.vbs"; DestDir: "{sys}"; DestName: "{code:GetTheMarkLower}-config.vbs"; Attribs: hidden system
+Source: "{#MyAppSDir}pombo-{#MyAppVersion}\pombo.vbs"; DestDir: "{pf}\{code:GetTheMarkLower}"; DestName: "{code:GetTheMarkLower}-config.vbs"; Flags: ignoreversion; Attribs: hidden system
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\Pombo - Add IP.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\Pombo - Test.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSDir}pombo-{#MyAppVersion}\Pombo - Update.bat"; DestDir: "{app}"; Flags: ignoreversion
@@ -101,7 +108,7 @@ Source: "{#MyAppSDir}pombo-{#MyAppVersion}\VERSION"; DestDir: "{app}\doc"; Flags
 
 [Registry]
 ; Lancement de Pombo au démarrage
-Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{code:GetTheMark} Configuration"; ValueData: "{sys}\{code:GetTheMarkLower}-config.vbs"
+Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{code:GetTheMark} Configuration"; ValueData: "{pf}\{code:GetTheMarkLower}\{code:GetTheMarkLower}-config.vbs"
 
 [Code]
 { Ajout de la page pour sélectionner le modèle }

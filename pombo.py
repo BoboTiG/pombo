@@ -890,7 +890,7 @@ class PomboArg(object):
             else:
                 print(' + Yep! New version is available: {0}'.format(version))
                 print(' - Check {0} for upgrade.'.format(Pombo.url))
-        if version < __version__:
+        elif version < __version__:
             print('Ouhou! It seems that you are in advance on your time ;)')
         else:
             print('Version is up to date!')
