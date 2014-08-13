@@ -31,7 +31,7 @@ subject to the following restrictions:
 
 
 __version__ = '0.0.11-b1'
-__author__ = 'BoboTiG'
+__author__ = 'JMSinfo'
 __date__ = '$12-Aug-2014 19:23:57$'
 
 

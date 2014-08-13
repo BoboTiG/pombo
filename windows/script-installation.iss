@@ -3,8 +3,8 @@
 
 #define MyAppName "Pombo"
 #define MyAppVersion "0.0.11"
-#define MyAppPublisher "BoboTiG"
-#define MyAppURL "http://bobotig.fr"
+#define MyAppPublisher "JMSinfo"
+#define MyAppURL "http://jmsinfo.co"
 
 ; Constante perso pour définir le dossier dans lequel se trouve le
 ; dossier pombo-$version.
@@ -58,7 +58,7 @@ french.type_custom=Installation personnalisée
 french.install_wlandump=WLAN Dump pour lister les signaux Wi-Fi sous Windows XP
 
 ; Anglais
-english.marque_title=Stealth mode 
+english.marque_title=Stealth mode
 english.marque_texte=Select the model which best correspond with your hardware to customise the stealth mode.
 english.marque_memo=Selected model for the stealth mode:
 english.type_full=Full installation

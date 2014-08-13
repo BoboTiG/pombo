@@ -3,8 +3,8 @@
 // Inno Setup Ver:	5.5.5(u)
 // Script Version:	1.0.1
 // date:			2014-08-12
-// Author:			BoboTiG <bobotig@gmail.com>
-// Homepage:		http://bobotig.fr
+// Author:			JMSinfo <dev@jmsinfo.co>
+// Homepage:		http://jmsinfo.co
 // License:			GNU Lesser General Public License (LGPL), version 3
 //						http://www.gnu.org/licenses/lgpl.html
 //
