@@ -4,7 +4,7 @@
 '''
 Pombo
 Theft-recovery tracking opensource software
-http://bobotig.fr/?c=projets/pombo
+http://jmsinfo.co/pombo
 http://sebsauvage.net/pombo
 
 This program is distributed under the OSI-certified zlib/libpnglicense .
@@ -30,9 +30,9 @@ subject to the following restrictions:
 '''
 
 
-__version__ = '0.0.11-b1'
+__version__ = '0.0.11'
 __author__ = 'JMSinfo'
-__date__ = '$12-Aug-2014 19:23:57$'
+__date__ = '$13-Aug-2014 12:42:57$'
 
 
 import hashlib
