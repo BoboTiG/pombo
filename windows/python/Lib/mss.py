@@ -339,7 +339,7 @@ class MSSMac(MSS):
         return results
 
     def get_pixels(self, monitor):
-        ''' Retreive all pixels from a monitor. Pixels have to be RGB.
+        ''' Retrieve all pixels from a monitor. Pixels have to be RGB.
         '''
 
         self.debug('get_pixels')
@@ -513,7 +513,7 @@ class MSSLinux(MSS):
         return results
 
     def get_pixels(self, monitor):
-        ''' Retreive all pixels from a monitor. Pixels have to be RGB.
+        ''' Retrieve all pixels from a monitor. Pixels have to be RGB.
         '''
 
         self.debug('get_pixels')
@@ -642,7 +642,7 @@ class MSSWindows(MSS):
         return results
 
     def get_pixels(self, monitor):
-        ''' Retreive all pixels from a monitor. Pixels have to be RGB. '''
+        ''' Retrieve all pixels from a monitor. Pixels have to be RGB. '''
 
         self.debug('get_pixels')
 

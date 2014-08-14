@@ -131,7 +131,7 @@ begin
 	CreatePageStealthMode;
 end;
 
-// Update the sumary details
+// Update the summary details
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo, MemoTypeInfo, MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
 var
 	s : String;
