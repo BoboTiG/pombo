@@ -4,7 +4,7 @@
 '''
 Pombo
 Theft-recovery tracking opensource software
-http://jmsinfo.co/pombo
+http://jmsinfo.co/?p=projets
 http://sebsauvage.net/pombo
 
 This program is distributed under the OSI-certified zlib/libpnglicense .
@@ -71,9 +71,7 @@ except ImportError as ex:
 # --- [ Routines ] -----------------------------------------------------
 # ----------------------------------------------------------------------
 def file_size(filename):
-    '''
-        Get file to send size.
-    '''
+    ''' Get file to send size. '''
 
     num = os.path.getsize(filename)
     for key in ['B', 'KB', 'MB', 'GB']:
@@ -84,25 +82,19 @@ def file_size(filename):
 
 
 def hash_string(current_ip):
-    '''
-        IP hash method - could be easily modifed.
-    '''
+    ''' IP hash method - could be easily modifed. '''
 
     return hashlib.sha256(current_ip.encode()).hexdigest()
 
 
 def printerr(string=''):
-    '''
-        Print an error message to STDERR.
-    '''
+    ''' Print an error message to STDERR. '''
 
     sys.stderr.write(str(string) + "\n")
 
 
 def to_bool(value=''):
-    '''
-        Return a boolean of a given string.
-    '''
+    ''' Return a boolean of a given string. '''
 
     return str(value).lower() in {'true', 'oui', 'yes', 'on', '1'}
 
@@ -111,9 +103,7 @@ def to_bool(value=''):
 # --- [ Classes ] ------------------------------------------------------
 # ----------------------------------------------------------------------
 class Pombo(object):
-    '''
-        Pombo core.
-    '''
+    ''' Pombo core. '''
 
     url = 'https://github.com/BoboTiG/pombo'
     uplink = 'https://raw.github.com/BoboTiG/pombo/master/VERSION'
@@ -129,9 +119,7 @@ class Pombo(object):
     vc_version = '0.9.5'
 
     def __init__(self, testing=False):
-        '''
-            Pombo initializations.
-        '''
+        ''' Pombo initializations. '''
 
         try:
             oses_ = {'Linux': 'Linux', 'Darwin': 'Mac', 'Windows': 'Windows'}
@@ -151,17 +139,13 @@ class Pombo(object):
         self.install_log_handlers()
 
     def __del__(self):
-        '''
-            Actions to do when Pombo class is destroyed.
-        '''
+        ''' Actions to do when Pombo class is destroyed. '''
 
         if self.log:
             self.log.info('Session terminated.')
 
     def config(self):
-        '''
-            Get configuration from conf file.
-        '''
+        ''' Get configuration from conf file. '''
 
         if not os.path.isfile(self.conf):
             printerr("[Errno 2] No such file or directory: '{0}'"
@@ -250,8 +234,7 @@ class Pombo(object):
         return config
 
     def current_user(self):
-        '''
-            Return the user who is currently logged in and uses the X
+        ''' Return the user who is currently logged in and uses the X
             session. None if could not be determined.
         '''
 
@@ -270,9 +253,7 @@ class Pombo(object):
         return user
 
     def get_manufacturer(self):
-        '''
-            Get the manufacturer.
-        '''
+        ''' Get the manufacturer. '''
 
         if self.os_name == 'Windows':
             cmd = 'wmic csproduct get vendor, name, version /value'
@@ -301,9 +282,7 @@ class Pombo(object):
         return manufacturer
 
     def get_serial(self):
-        '''
-            Get the serial number.
-        '''
+        ''' Get the serial number. '''
 
         serial = 'Unknown'
         cmd = {
@@ -324,8 +303,7 @@ class Pombo(object):
         return serial
 
     def install_log_handlers(self, level=logging.INFO):
-        '''
-            Install log handlers: one for the file log_file and one for
+        ''' Install log handlers: one for the file log_file and one for
             the console.
         '''
 
@@ -350,9 +328,7 @@ class Pombo(object):
         self.log.addHandler(steam_handler)
 
     def ip_changed(self, curr_ip):
-        '''
-            Check if current_ip is already known from ip_file.
-        '''
+        ''' Check if current_ip is already known from ip_file. '''
 
         if self.configuration['only_on_ip_change']:
             # Read previous IP
@@ -374,16 +350,14 @@ class Pombo(object):
         return False
 
     def need_report(self, current_ip):
-        '''
-            Return the stolen state or the computer IP.
+        ''' Return the stolen state or the computer IP.
             If one of them is True, so we need to send a report.
         '''
 
         return self.stolen() or self.ip_changed(current_ip)
 
     def public_ip(self):
-        '''
-            Returns your public IP address.
+        ''' Returns your public IP address.
             Output: The IP address in string format.
                     None if not internet connection is available.
         '''
@@ -411,8 +385,7 @@ class Pombo(object):
         return None
 
     def request_url(self, url, method='get', params=None):
-        '''
-            Make a request with all options "aux petits oignons".
+        ''' Make a request with all options "aux petits oignons".
         '''
 
         # Proxies
@@ -448,8 +421,7 @@ class Pombo(object):
         return ret
 
     def runprocess(self, commandline, useshell=False):
-        '''
-            Runs a sub-process, wait for termination and returns
+        ''' Runs a sub-process, wait for termination and returns
             the process output (both stdout and stderr, concatenated).
 
             Input: commandline : string or list of strings. First string is
@@ -499,8 +471,7 @@ class Pombo(object):
         return ''
 
     def screenshot(self, filename):
-        '''
-            Takes a screenshot and returns the path to the saved image
+        ''' Takes a screenshot and returns the path to the saved image
             (in TMP). None if could not take the screenshot.
         '''
 
@@ -534,8 +505,7 @@ class Pombo(object):
         return filepath
 
     def snapshot_sendto_server(self, filename, filepath, data):
-        '''
-            Compute authentication token and send the report to all servers.
+        ''' Compute authentication token and send the report to all servers.
         '''
 
         filedata = b64encode(data)
@@ -561,8 +531,7 @@ class Pombo(object):
         return
 
     def snapshot(self, current_ip):
-        '''
-            Make a global snapshot of the system (ip, screenshot, webcam...)
+        ''' Make a global snapshot of the system (ip, screenshot, webcam...)
             and sends it to the internet.
             If not internet connexion is available, will exit.
         '''
@@ -641,9 +610,7 @@ class Pombo(object):
         return
 
     def stolen(self):
-        '''
-            Returns True is the computer was stolen.
-        '''
+        ''' Returns True is the computer was stolen. '''
 
         salt = 'just check if I am a stolen one'
         key = self.configuration['password']
@@ -664,8 +631,7 @@ class Pombo(object):
         return False
 
     def system_report(self, current_ip):
-        '''
-            Returns a system report: computer name, date/time, public IP,
+        ''' Returns a system report: computer name, date/time, public IP,
             list of wired and wireless interfaces and their configuration, etc.
         '''
 
@@ -713,8 +679,7 @@ Date/time: {7} (local time) {1}
         return report
 
     def webcamshot(self, filename):
-        '''
-            Takes a snapshot with the webcam and returns the path to the
+        ''' Takes a snapshot with the webcam and returns the path to the
             saved image (in TMP). None if could not take the snapshot.
         '''
 
@@ -760,8 +725,7 @@ Date/time: {7} (local time) {1}
         return filepath
 
     def work(self):
-        '''
-            Primary function, it will launch the report based on the
+        ''' Primary function, it will launch the report based on the
             stolen state.
         '''
 
@@ -807,9 +771,7 @@ Date/time: {7} (local time) {1}
 
 
 class PomboArg(object):
-    '''
-        CLI arguments traitment.
-    '''
+    ''' CLI arguments traitment. '''
 
     def __init__(self, arg=None):
         '''
@@ -821,9 +783,7 @@ class PomboArg(object):
             printerr('Unknown argument "{0}" - try "help".'.format(arg))
 
     def add(self):
-        '''
-            Add an IP to the ip_file if not already known.
-        '''
+        ''' Add an IP to the ip_file if not already known. '''
 
         pombo = Pombo()
         curr_ip = pombo.public_ip()
@@ -843,9 +803,7 @@ class PomboArg(object):
                 fileh.write(hash_string(curr_ip) + "\n")
 
     def help(self):
-        '''
-            Print help message.
-        '''
+        ''' Print help message. '''
 
         print('Options ---')
         print('   add      add the current IP to {0}'.format(Pombo.ip_file))
@@ -856,9 +814,7 @@ class PomboArg(object):
         print('   version  show Pombo, python and PIL versions')
 
     def list(self):
-        '''
-            Print known IPs from ip_file.
-        '''
+        ''' Print known IPs from ip_file. '''
 
         if not os.path.isfile(Pombo.ip_file):
             print('There is no known IP address.')
@@ -869,9 +825,7 @@ class PomboArg(object):
                     print('   {0}...{1}'.format(ip_h[:20], ip_h.strip()[-20:]))
 
     def update(self):
-        '''
-            Check for a newer version.
-        '''
+        ''' Check for a newer version. '''
 
         version = ''
         try:
@@ -896,9 +850,7 @@ class PomboArg(object):
             print('Version is up to date!')
 
     def version(self):
-        '''
-            Print Pombo and modules versions.
-        '''
+        ''' Print Pombo and modules versions. '''
 
         ver = sys.version_info
         print('I am using Python {0}.{1}.{2}'.format(ver.major,
