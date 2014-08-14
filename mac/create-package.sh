@@ -7,13 +7,11 @@ files=" check-imports.py \
         install.sh \
         uninstall.sh \
         ../icon/pombo.svg \
-        ../CREDITS \
-        ../INSTALL \
-        ../LICENSE \
+        ../doc/* \
         ../pombo.conf \
+        ../pombo.php \
         ../pombo.py \
         ../README.md \
-        ../REQUIREMENTS \
         ../VERSION \
 "
 
