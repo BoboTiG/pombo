@@ -30,9 +30,12 @@ subject to the following restrictions:
 '''
 
 
-__version__ = '0.0.11'
+from __future__ import print_function
+
+
+__version__ = '1.0.1'
 __author__ = 'JMSinfo'
-__date__ = '$13-Aug-2014 12:42:57$'
+__date__ = '$03-Jan-2015 15:39:57$'
 
 
 import hashlib
