@@ -31,7 +31,7 @@
             if ( ($fh = fopen($CHECKFILE, 'w')) === false )
                 die('Could not create file.');
             fclose($fh);
-            die('File created, pombo will see it and check every 5 minutes.');
+            die('File created, Pombo will see it and check every 5 minutes.');
         }
         if ( isset($_GET['myip']) )
             die( !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
