@@ -35,7 +35,7 @@ from __future__ import print_function
 
 __version__ = '1.0.1'
 __author__ = 'JMSinfo'
-__date__ = '$03-Jan-2015 15:39:57$'
+__date__ = '$03-Feb-2015 17:15:57$'
 
 
 import hashlib
