@@ -490,7 +490,7 @@ class Pombo(object):
         if self.os_name == 'Windows':
             try:
                 img = mss.MSSWindows()
-                for filename in img.save(output=filepath, oneshot=True):
+                for filename in img.save(output=filepath, screen=-1):
                     filepath = filename
             except ValueError as ex:
                 self.log.exception(ex)
