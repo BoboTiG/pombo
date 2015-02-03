@@ -520,7 +520,7 @@ class Pombo(object):
             msg = filedata + '***' + filename
         authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
 
-        # Send to the webserver (HTTP Pos_nameT).
+        # Send to the webserver (HTTP POST).
         parameters = {'filename': filename,
                       'filedata': filedata,
                       'token': authtoken}
