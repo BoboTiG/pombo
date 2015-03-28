@@ -4,7 +4,7 @@
 '''
 Pombo
 Theft-recovery tracking opensource software
-http://jmsinfo.co/?p=projets
+http://pombo.jmsinfo.co
 http://sebsauvage.net/pombo
 
 This program is distributed under the OSI-certified zlib/libpnglicense .
@@ -44,6 +44,7 @@ import logging
 import os
 import platform
 import subprocess
+from socket import gaierror
 import sys
 import time
 import zipfile
@@ -189,7 +190,7 @@ class Pombo(object):
             conf = SafeConfigParser(defaults=defaults)
             conf.read(self.conf)
         except Error as ex:
-            self.log.exception(ex)
+            self.log.error(ex)
             sys.exit(1)
 
         # Primary parameters
@@ -373,13 +374,9 @@ class Pombo(object):
             self.log.info(txt_, distant.split('/')[2])
             try:
                 current_ip = self.request_url(distant, 'get', {'myip': '1'})
-            except socket.gaierror as ex:
-                self.log.exception(ex)
-                return None
-            try:
                 IP(current_ip)
-            except ValueError as ex:
-                self.log.exception(ex)
+            except (gaierror, ValueError) as ex:
+                self.log.error(ex)
                 return None
             return current_ip
 
@@ -500,7 +497,7 @@ class Pombo(object):
                 for filename in img.save(output=filepath, screen=-1):
                     filepath = filename
             except ValueError as ex:
-                self.log.exception(ex)
+                self.log.error(ex)
         else:
             filepath += '.jpg'
             cmd = self.configuration['screenshot']
@@ -703,7 +700,7 @@ Date/time: {7} (local time) {1}
                 if not cam:
                     cam = Device(devnum=1)
             except Exception as ex:
-                self.log.exception('vidcap.Error: %s', ex)
+                self.log.error('vidcap.Error: %s', ex)
                 return None
             try:
                 # Here you can modify the picture resolution
