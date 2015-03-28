@@ -33,9 +33,9 @@ subject to the following restrictions:
 from __future__ import print_function
 
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 __author__ = 'JMSinfo'
-__date__ = '$03-Feb-2015 17:15:57$'
+__date__ = '$28-Mar-2015 15:26:57$'
 
 
 import hashlib
@@ -371,7 +371,11 @@ class Pombo(object):
         for distant in self.configuration['server_url'].split('|'):
             txt_ = 'Retrieving IP address from %s'
             self.log.info(txt_, distant.split('/')[2])
-            current_ip = self.request_url(distant, 'get', {'myip': '1'})
+            try:
+                current_ip = self.request_url(distant, 'get', {'myip': '1'})
+            except socket.gaierror as ex:
+                self.log.exception(ex)
+                return None
             try:
                 IP(current_ip)
             except ValueError as ex:
