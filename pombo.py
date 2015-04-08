@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 '''
 Pombo
 Theft-recovery tracking opensource software
@@ -29,14 +28,11 @@ subject to the following restrictions:
     3. This notice may not be removed or altered from any source distribution.
 '''
 
-
 from __future__ import print_function
 
-
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __author__ = 'JMSinfo'
-__date__ = '$28-Mar-2015 15:26:57$'
-
+__date__ = '$08-Apr-2015 11:06:57$'
 
 import hashlib
 import hmac
@@ -100,7 +96,7 @@ def printerr(string=''):
 def to_bool(value=''):
     ''' Return a boolean of a given string. '''
 
-    return str(value).lower() in {'true', 'oui', 'yes', 'on', '1'}
+    return str(value).lower() in {'true', 'on', '1', 'yes', 'oui'}
 
 
 # ----------------------------------------------------------------------
@@ -152,11 +148,11 @@ class Pombo(object):
         ''' Get configuration from conf file. '''
 
         if not os.path.isfile(self.conf):
-            printerr("[Errno 2] No such file or directory: '{0}'"
+            printerr("[Errno 2] No such file or directory: '{}'"
                      .format(self.conf))
             sys.exit(1)
         if not os.access(self.conf, os.R_OK):
-            printerr("[Errno 13] Permission denied: '{0}'".format(self.conf))
+            printerr("[Errno 13] Permission denied: '{}'".format(self.conf))
             sys.exit(1)
 
         self.log.debug('Loading configuration')
@@ -184,7 +180,7 @@ class Pombo(object):
             'screenshot': '',
             'camshot': '',
             'camshot_filetype': ''
-            }
+        }
         config = {}
         try:
             conf = SafeConfigParser(defaults=defaults)
@@ -275,8 +271,7 @@ class Pombo(object):
                 res[1].split(': ')[1].strip()
         else:
             manufacturer = ''
-            for info in ['system-manufacturer',
-                         'system-product-name',
+            for info in ['system-manufacturer', 'system-product-name',
                          'system-version']:
                 cmd = '/usr/sbin/dmidecode --string ' + info
                 res = self.runprocess(cmd, useshell=True).strip()
@@ -292,9 +287,9 @@ class Pombo(object):
         cmd = {
             'Linux': '/usr/sbin/dmidecode --string system-serial-number',
             'Mac': '/usr/sbin/system_profiler SPHardwareDataType ' +
-                   '| grep system | cut -d: -f2',
+            '| grep system | cut -d: -f2',
             'Windows': 'wmic bios get serialnumber /value'
-            }
+        }
         res = self.runprocess(cmd[self.os_name], useshell=True).strip()
         if self.os_name == 'Windows':
             res = res.split('=')
@@ -313,8 +308,8 @@ class Pombo(object):
 
         self.log.handlers = []
         self.log.setLevel(level)
-        formatter = logging.Formatter('%(asctime)s [%(levelname)s] ' +
-                                      '%(funcName)s::L%(lineno)d %(message)s')
+        formatter = logging.Formatter(
+            '%(asctime)s [%(levelname)s] %(funcName)s::L%(lineno)d %(message)s')
 
         # Log to file
         try:
@@ -384,8 +379,8 @@ class Pombo(object):
         # (If the computer has no connexion to the internet, it's no use
         # accumulating snapshots.)
         if not current_ip:
-            self.log.error('Computer does not seem to be connected to the' +
-                           'internet. Aborting.')
+            self.log.error(
+                'Computer does not seem to be connected to the internet. Aborting.')
         return None
 
     def request_url(self, url, method='get', params=None):
@@ -411,12 +406,18 @@ class Pombo(object):
                     self.configuration['auth_pswd'])
         try:
             if method == 'get':
-                req = requests.get(url, params=params, proxies=proxies,
-                                   verify=ssl_cert_verif, auth=auth,
+                req = requests.get(url,
+                                   params=params,
+                                   proxies=proxies,
+                                   verify=ssl_cert_verif,
+                                   auth=auth,
                                    timeout=30)
             else:
-                req = requests.post(url, data=params, proxies=proxies,
-                                    verify=ssl_cert_verif, auth=auth,
+                req = requests.post(url,
+                                    data=params,
+                                    proxies=proxies,
+                                    verify=ssl_cert_verif,
+                                    auth=auth,
                                     timeout=30)
             ret = req.content.strip().decode()
         except RequestException as ex:
@@ -445,7 +446,7 @@ class Pombo(object):
                                  % (user,filepath),useshell=True)
         '''
 
-        self.log.debug('{0} & useshell={1}'.format(commandline, useshell))
+        self.log.debug('{} & useshell={}'.format(commandline, useshell))
         try:
             myprocess = subprocess.Popen(commandline,
                                          stdout=subprocess.PIPE,
@@ -465,8 +466,8 @@ class Pombo(object):
                 # error (if any) and continue.
                 self.log.error('STDERR: %s', serr)
             if sys.version > '3':
-                return str(''.join(map(chr, sout)) + "\n" +
-                           ''.join(map(chr, serr)))
+                return str(
+                    ''.join(map(chr, sout)) + "\n" + ''.join(map(chr, serr)))
             else:
                 return unicode(sout, self.encoding).encode('utf-8') + \
                     "\n" + unicode(serr, self.encoding).encode('utf-8')
@@ -485,10 +486,10 @@ class Pombo(object):
 
         temp = gettempdir()
         self.log.info('Taking screenshot')
-        filepath = '{0}_screenshot'.format(os.path.join(temp, filename))
+        filepath = '{}_screenshot'.format(os.path.join(temp, filename))
         if not self.user:
-            self.log.error('Could not determine current user. ' +
-                           'Cannot take screenshot.')
+            self.log.error(
+                'Could not determine current user. Cannot take screenshot.')
             return None
 
         if self.os_name == 'Windows':
@@ -525,9 +526,11 @@ class Pombo(object):
         authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
 
         # Send to the webserver (HTTP POST).
-        parameters = {'filename': filename,
-                      'filedata': filedata,
-                      'token': authtoken}
+        parameters = {
+            'filename': filename,
+            'filedata': filedata,
+            'token': authtoken
+        }
         for distant in self.configuration['server_url'].split('|'):
             txt_ = 'Sending file (%s) to %s'
             self.log.info(txt_, filesize, distant.split('/')[2])
@@ -551,7 +554,7 @@ class Pombo(object):
         # Create the system report (IP, date/hour...)
         self.log.info('Filename: %s', report_name)
         self.log.info('Collecting system info')
-        filepath = '{0}.txt'.format(os.path.join(temp, report_name))
+        filepath = '{}.txt'.format(os.path.join(temp, report_name))
         with open(filepath, 'a') as fileh:
             fileh.write(self.system_report(current_ip))
         filestozip = []
@@ -570,7 +573,7 @@ class Pombo(object):
         # Zip files:
         self.log.info('Zipping files')
         os.chdir(temp)
-        zipfilepath = '{0}.zip'.format(os.path.join(temp, report_name))
+        zipfilepath = '{}.zip'.format(os.path.join(temp, report_name))
         fileh = zipfile.ZipFile(zipfilepath, 'w', zipfile.ZIP_DEFLATED)
         for filepath in filestozip:
             fileh.write(os.path.basename(filepath))
@@ -590,15 +593,14 @@ class Pombo(object):
         else:
             self.log.info('Encrypting zip with GnuPG')
             if self.configuration['gpg_binary'] == '':
-                self.log.critical('The path to the GPG binary is not set. ' +
-                                  'Aborting.')
+                self.log.critical(
+                    'The path to the GPG binary is not set. Aborting.')
                 sys.exit(1)
             gpgfilepath += '.gpg'
             self.runprocess([self.configuration['gpg_binary'], '--batch',
-                             '--no-default-keyring',
-                             '--trust-model', 'always', '-r',
-                             self.configuration['gpgkeyid'],
-                             '-o', gpgfilepath, '-e', zipfilepath])
+                             '--no-default-keyring', '--trust-model', 'always',
+                             '-r', self.configuration['gpgkeyid'], '-o',
+                             gpgfilepath, '-e', zipfilepath])
             os.remove(zipfilepath)
             if not os.path.isfile(gpgfilepath):
                 self.log.critical('GPG encryption failed. Aborting.')
@@ -623,9 +625,11 @@ class Pombo(object):
             key = key.encode()
             msg = msg.encode()
         authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
-        parameters = {'filename': self.configuration['check_file'],
-                      'filedata': salt,
-                      'verify': authtoken}
+        parameters = {
+            'filename': self.configuration['check_file'],
+            'filedata': salt,
+            'verify': authtoken
+        }
         for distant in self.configuration['server_url'].split('|'):
             self.log.info('Checking status on %s', distant.split('/')[2])
             if self.request_url(distant, 'post', parameters) == '1':
@@ -651,24 +655,20 @@ System   : {5} {1}
 Public IP: {6} (approximate geolocation: http://www.geoiptool.com/?IP={6}) {1}
 Date/time: {7} (local time) {1}
 """
-        report = report_.format(__version__, separator,
-                                self.user,
-                                self.get_manufacturer(),
-                                self.get_serial(), ' '.join(platform.uname()),
-                                current_ip,
+        report = report_.format(__version__, separator, self.user,
+                                self.get_manufacturer(), self.get_serial(),
+                                ' '.join(platform.uname()), current_ip,
                                 datetime.now())
         separator = "\n" + separator + "\n"
 
         # Primary commands, the Network stuff ...
-        todo = [
-            ('network_config', 'Network config'),
-            ('wifi_access_points', 'Nearby wireless access points'),
-            ('traceroute', 'Network routes'),
-            ('network_trafic', 'Current network connections')
-            ]
+        todo = [('network_config', 'Network config'),
+                ('wifi_access_points', 'Nearby wireless access points'),
+                ('traceroute', 'Network routes'),
+                ('network_trafic', 'Current network connections')]
         for key, info in todo:
             self.log.debug('System report: %s()', key)
-            report += "{0}:\n".format(info)
+            report += "{}:\n".format(info)
             if not self.configuration[key]:
                 report += 'Disabled.'
             else:
@@ -694,7 +694,7 @@ Date/time: {7} (local time) {1}
         temp = gettempdir()
         self.log.info('Taking webcamshot')
         if self.os_name == 'Windows':
-            filepath = '{0}_webcam.jpg'.format(os.path.join(temp, filename))
+            filepath = '{}_webcam.jpg'.format(os.path.join(temp, filename))
             try:
                 cam = Device(devnum=0)
                 if not cam:
@@ -712,7 +712,7 @@ Date/time: {7} (local time) {1}
                 self.log.error(ex)
                 return None
         else:
-            filepath = '{0}_webcam.{1}'.format(
+            filepath = '{}_webcam.{}'.format(
                 os.path.join(temp, filename),
                 self.configuration['camshot_filetype'])
             cmd = self.configuration['camshot'].replace('<filepath>', filepath)
@@ -720,7 +720,7 @@ Date/time: {7} (local time) {1}
             if os.path.isfile(filepath):
                 if self.configuration['camshot_filetype'] == 'ppm':
                     full_path_ = os.path.join(temp, filename)
-                    new_path_ = '{0}_webcam.jpg'.format(full_path_)
+                    new_path_ = '{}_webcam.jpg'.format(full_path_)
                     self.runprocess(['/usr/bin/convert', filepath, new_path_])
                     os.unlink(filepath)
                     filepath = new_path_
@@ -746,7 +746,7 @@ Date/time: {7} (local time) {1}
             self.snapshot(current_ip)
             wait_stolen = self.configuration['time_limit'] // 3
             self.log.info('==> In real scenario, Pombo will send a report' +
-                          ' each {0} minutes.'.format(wait_stolen))
+                          ' each {} minutes.'.format(wait_stolen))
         else:
             if self.os_name == 'Windows':
                 # Cron job like for Windows :s
@@ -784,7 +784,7 @@ class PomboArg(object):
         if arg and hasattr(self, arg):
             getattr(self, arg)()
         else:
-            printerr('Unknown argument "{0}" - try "help".'.format(arg))
+            printerr('Unknown argument "{}" - try "help".'.format(arg))
 
     def add(self):
         ''' Add an IP to the ip_file if not already known. '''
@@ -802,7 +802,7 @@ class PomboArg(object):
                     print('IP already known.')
                     known = True
         if not known:
-            print('Adding IP {0} to {1}'.format(curr_ip, pombo.ip_file))
+            print('Adding IP {} to {}'.format(curr_ip, pombo.ip_file))
             with open(pombo.ip_file, 'a+') as fileh:
                 fileh.write(hash_string(curr_ip) + "\n")
 
@@ -810,7 +810,7 @@ class PomboArg(object):
         ''' Print help message. '''
 
         print('Options ---')
-        print('   add      add the current IP to {0}'.format(Pombo.ip_file))
+        print('   add      add the current IP to {}'.format(Pombo.ip_file))
         print('   check    launch Pombo in verbose mode')
         print('   help     show this message')
         print('   list     list known IP')
@@ -824,9 +824,9 @@ class PomboArg(object):
             print('There is no known IP address.')
         else:
             with open(Pombo.ip_file, 'r') as fileh:
-                print('IP hashes in {0}:'.format(Pombo.ip_file))
+                print('IP hashes in {}:'.format(Pombo.ip_file))
                 for ip_h in fileh.readlines():
-                    print('   {0}...{1}'.format(ip_h[:20], ip_h.strip()[-20:]))
+                    print('   {}...{}'.format(ip_h[:20], ip_h.strip()[-20:]))
 
     def update(self):
         ''' Check for a newer version. '''
@@ -835,19 +835,19 @@ class PomboArg(object):
         try:
             req = requests.get(Pombo.uplink, verify=True)
         except ConnectionError as ex:
-            print(' ! Arf, check failed: {0} !'.format(ex))
+            print(' ! Arf, check failed: {} !'.format(ex))
             print(' . Please check later.')
             return
         version = req.content.strip().decode()
         if version > __version__:
             if 'a' in version or 'b' in version:
-                print(' - Development version available: {0}'.format(version))
+                print(' - Development version available: {}'.format(version))
                 print(' . You should upgrade only for tests purpose!')
-                print(' - Check {0}'.format(Pombo.url))
+                print(' - Check {}'.format(Pombo.url))
                 print('   and report issues/ideas on GitHub')
             else:
-                print(' + Yep! New version is available: {0}'.format(version))
-                print(' - Check {0} for upgrade.'.format(Pombo.url))
+                print(' + Yep! New version is available: {}'.format(version))
+                print(' - Check {} for upgrade.'.format(Pombo.url))
         elif version < __version__:
             print('Ouhou! It seems that you are in advance on your time ;)')
         else:
@@ -857,19 +857,18 @@ class PomboArg(object):
         ''' Print Pombo and modules versions. '''
 
         ver = sys.version_info
-        print('I am using Python {0}.{1}.{2}'.format(ver.major,
-                                                     ver.minor,
-                                                     ver.micro))
+        print('I am using Python {}.{}.{}'.format(ver.major, ver.minor,
+                                                  ver.micro))
         if platform.system() == 'Windows':
-            print('with VideoCapture {0}'.format(Pombo.vc_version))
-            print('            & MSS {0}'.format(mss.__version__))
-            print('            & PIL {0}'.format(Image.VERSION))
+            print('with VideoCapture {}'.format(Pombo.vc_version))
+            print('            & MSS {}'.format(mss.__version__))
+            print('            & PIL {}'.format(Image.VERSION))
 
 
 def main(argz):
     ''' Usage example. '''
 
-    print('Pombo {0}'.format(__version__))
+    print('Pombo {}'.format(__version__))
     try:
         if len(argz) > 1 and argz[1] != 'check':
             PomboArg(argz[1])
@@ -883,6 +882,7 @@ def main(argz):
         printerr(ex)
         raise
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
