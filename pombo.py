@@ -496,7 +496,7 @@ class Pombo(object):
             try:
                 img = mss()
                 filepath = next(img.save(output=filepath, screen=-1))
-            except ValueError, ScreenshotError as ex:
+            except (ValueError, ScreenshotError) as ex:
                 self.log.error(ex)
         else:
             filepath += '.jpg'
