@@ -61,7 +61,7 @@ try:
     if os.name == 'nt':
         from PIL import Image
         from VideoCapture import Device
-        import mss
+        from mss import mss, ScreenshotError
 except ImportError as ex:
     print(ex)
     sys.exit(1)
@@ -494,10 +494,9 @@ class Pombo(object):
 
         if self.os_name == 'Windows':
             try:
-                img = mss.MSSWindows()
-                for filename in img.save(output=filepath, screen=-1):
-                    filepath = filename
-            except ValueError as ex:
+                img = mss()
+                filepath = next(img.save(output=filepath, screen=-1))
+            except ValueError, ScreenshotError as ex:
                 self.log.error(ex)
         else:
             filepath += '.jpg'
