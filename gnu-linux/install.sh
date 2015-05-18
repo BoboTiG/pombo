@@ -51,8 +51,8 @@ cat <<EOM
 
 Thank you to use Pombo!
 Then you will need to:
-    1 - import your GnuPG keyID
-    2 - tune options into /etc/pombo.conf (you can use the GUI: pombo-config)
+    1 - to enable encryption, import your GnuPG keyID
+    2 - tune options into /etc/pombo.conf
     3 - tune variables into pombo.php
     4 - copy pombo.php to your server(s) (both PHP versions 4 & 5 supported)
 And do not forget to write somewhere in security your computer Serial Number.

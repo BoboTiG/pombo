@@ -4,7 +4,7 @@
 // Script Version:	1.0.1
 // date:			2014-08-12
 // Author:			JMSinfo <dev@jmsinfo.co>
-// Homepage:		http://jmsinfo.co
+// Homepage:		http://pombo.jmsinfo.co
 // License:			GNU Lesser General Public License (LGPL), version 3
 //						http://www.gnu.org/licenses/lgpl.html
 //
@@ -24,7 +24,7 @@
 // Changelog:
 //	1.0.1
 //		remove useless instructions (use of ItemIndex)
-//		disable Next buton only if not choice selected
+//		disable Next buton only if no choice selected
 //		adjust list height
 //
 // ----------------------------------------------------------------------------
