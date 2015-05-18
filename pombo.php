@@ -1,12 +1,29 @@
 <?php
-    /***************
-     * Pombo 1.0.1 *
-     ***************/
-
     error_reporting(0);
     usleep(200000);
-    $PASSWORD  = '<The same value as in pombo.conf.>';
-    $CHECKFILE = '<The same value as in pombo.conf.>';
+
+    /* For multi hosts, you can define these 2 variables in
+     * the index.php and call pombo.php.
+     *
+     * Tree:
+     *     /pombo.php
+     *     /bob
+     *       |--- index.php
+     *     /alice
+     *       |--- index.php
+     *
+     * Contents of index.php:
+     *
+     * <?php
+     *     $PASSWORD  = '<The same value as in pombo.conf.>';
+     *     $CHECKFILE = '<The same value as in pombo.conf.>';
+     *     require '../pombo.php';
+     * ?>
+     */
+    if ( !isset($PASSWORD) )
+        $PASSWORD  = '<The same value as in pombo.conf.>';
+    if ( !isset($CHECKFILE) )
+        $CHECKFILE = '<The same value as in pombo.conf.>';
 
     if ( !function_exists('hash_hmac') ) {
         //Calculate HMAC-SHA1 according to RFC2104
