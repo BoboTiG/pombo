@@ -1,6 +1,10 @@
 *.pyc
 archives/
 .fuse_hidden*
+pombo-*.conf
+gnu-linux/*.tar.gz
+mac/*.tar.gz
+windows/Output/
 
 # GUI
 gui/bin/

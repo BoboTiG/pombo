@@ -3,18 +3,18 @@
 # Package creation for Pombo (GNU/Linux).
 #
 
+[ -z "$1" ] && custom="" || custom="-$1"
 files=" check-imports.py \
         install.sh \
         uninstall.sh \
         ../icon/pombo.svg \
         ../doc/* \
-        ../pombo.conf \
+        ../pombo$custom.conf \
         ../pombo.php \
         ../pombo.py \
         ../README.md \
         ../VERSION \
 "
-
-[ -z "$1" ] && version=$(cat ../VERSION) || version="$1"
-output="pombo-$version.tar.gz"
-tar -cf - $files | gzip -f >$output
+version=$(cat ../VERSION)
+output="pombo-$version$custom.tar.gz"
+tar -cf - $files --transform "s/pombo$custom.conf/pombo.conf/" | gzip -f >$output
