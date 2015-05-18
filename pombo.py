@@ -32,7 +32,7 @@ from __future__ import print_function
 
 __version__ = '1.0.3'
 __author__ = 'JMSinfo'
-__date__ = '$08-Apr-2015 11:06:57$'
+__date__ = '$18-May-2015 14:28:57$'
 
 import hashlib
 import hmac
