@@ -1,8 +1,8 @@
 // ----------------------------------------------------------------------------
 //
-// Inno Setup Ver:	5.5.5(u)
-// Script Version:	1.0.1
-// date:			2014-08-12
+// Inno Setup Ver:	5.5.7(a)
+// Script Version:	1.0.2
+// date:			2015-12-30
 // Author:			JMSinfo <dev@jmsinfo.co>
 // Homepage:		http://pombo.jmsinfo.co
 // License:			GNU Lesser General Public License (LGPL), version 3
@@ -26,6 +26,8 @@
 //		remove useless instructions (use of ItemIndex)
 //		disable Next buton only if no choice selected
 //		adjust list height
+//	1.0.2
+//		replace Hight() by GetArrayLength()-1
 //
 // ----------------------------------------------------------------------------
 
@@ -114,7 +116,7 @@ begin
 	ChosenMark.Height := PageStealthMode.SurfaceHeight - 10;
 	ChosenMark.Parent := PageStealthMode.Surface;
 	ChosenMark.OnClick := @OnPageStealthModeClicked;
-	for i := 0 to High(Marks) do begin
+	for i := 0 to GetArrayLength(Marks)-1 do begin
 		ChosenMark.Items.Add(Marks[i]);
 	end;
 end;
