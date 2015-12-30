@@ -4,7 +4,7 @@
 
 #define MyAppName "Pombo"
 #define MyAppVersion "1.0.3"
-#define MyAppPublisher "JMSinfo"
+#define MyAppPublisher "JMSinfo SAS"
 #define MyAppURL "http://pombo.jmsinfo.co"
 
 ; Constante pour créer un installeur personnalisé.
