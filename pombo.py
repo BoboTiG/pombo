@@ -779,7 +779,7 @@ Date/time: {7} (local time) {1}
                 # Here you can modify the picture resolution
                 # cam.setResolution(768, 576)
                 cam.getImage()
-                time.sleep(1)
+                time.sleep(2)
                 cam.saveSnapshot(filepath)
             except ValueError as ex:
                 self.log.error(ex)
