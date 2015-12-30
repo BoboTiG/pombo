@@ -1,4 +1,5 @@
 *.pyc
+*.~is
 archives/
 .fuse_hidden*
 pombo-*.conf
