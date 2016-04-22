@@ -30,29 +30,25 @@ subject to the following restrictions:
 
 from __future__ import print_function
 
-__version__ = '1.0.3'
-__author__ = 'JMSinfo'
-__date__ = '$18-May-2015 14:28:57$'
-
 import hashlib
 import hmac
 import logging
 import os
 import platform
 import subprocess
-from socket import gaierror
 import sys
 import time
 import zipfile
 from base64 import b64encode
 from datetime import datetime
 from locale import getdefaultlocale
+from socket import gaierror
 from tempfile import gettempdir
 
 try:
-    from ConfigParser import Error, SafeConfigParser
-except ImportError:
     from configparser import Error, SafeConfigParser
+except ImportError:
+    from ConfigParser import Error, SafeConfigParser
 
 try:
     import requests
@@ -65,6 +61,10 @@ try:
 except ImportError as ex:
     print(ex)
     sys.exit(1)
+
+__version__ = '1.0.3'
+__author__ = 'JMSinfo'
+__date__ = '$18-May-2015 14:28:57$'
 
 
 # ----------------------------------------------------------------------
@@ -287,16 +287,16 @@ class Pombo(object):
         cmd = {
             'Linux': '/usr/sbin/dmidecode --string system-serial-number',
             'Mac': '/usr/sbin/system_profiler SPHardwareDataType ' +
-            '| grep system | cut -d: -f2',
+                   '| grep system | cut -d: -f2',
             'Windows': 'wmic bios get serialnumber /value'
         }
         res = self.runprocess(cmd[self.os_name], useshell=True).strip()
         if self.os_name == 'Windows':
             res = res.split('=')
-            if not res[0][0:3] == 'ERR' and not res[1] == '0':
+            if res[0][0:3] != 'ERR' and res[1] != '0':
                 serial = res[1]
         else:
-            if not res == 'System Serial Number':
+            if res != 'System Serial Number':
                 serial = res
         self.log.debug('Serial number is %s', serial)
         return serial
@@ -340,7 +340,7 @@ class Pombo(object):
             else:
                 with open(self.ip_file, 'r') as fileh:
                     prev_ips = fileh.readlines()
-                if not hash_string(curr_ip) in [ip.strip() for ip in prev_ips]:
+                if hash_string(curr_ip) not in [ip.strip() for ip in prev_ips]:
                     self.log.info('IP has changed.')
                     return True
                 self.log.info('IP has not changed. Aborting.')
@@ -446,7 +446,7 @@ class Pombo(object):
                                  % (user,filepath),useshell=True)
         '''
 
-        self.log.debug('{} & useshell={}'.format(commandline, useshell))
+        self.log.debug('% & useshell=%' % commandline, useshell)
         try:
             myprocess = subprocess.Popen(commandline,
                                          stdout=subprocess.PIPE,
@@ -884,4 +884,4 @@ def main(argz):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    exit(main(sys.argv))
