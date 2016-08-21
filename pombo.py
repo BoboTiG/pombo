@@ -248,7 +248,7 @@ class Pombo(object):
                     user = line.split(' ')[0]
                     if '(:0)' in line:
                         break
-        user = user.strip()
+            user = user.strip()
         self.log.debug('Username is %s', user)
         return user
 
