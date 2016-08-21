@@ -280,7 +280,7 @@ class Pombo(object):
                     if ":0" in line:
                         break
             user = user.strip()
-        self.log.debug('Username is %s', user)
+        self.log.debug("Username is %s", user)
         return user
 
     def get_manufacturer(self):
@@ -387,8 +387,6 @@ class Pombo(object):
                 self.log.info("IP has changed.")
                 return True
             self.log.info("IP has not changed. Aborting.")
-        else:
-            self.log.info("Skipping check based on IP change.")
         return False
 
     def need_report(self, current_ip):
@@ -397,7 +395,13 @@ class Pombo(object):
             If one of them is True, so we need to send a report.
         """
 
-        return self.stolen() or self.ip_changed(current_ip)
+        if not self.configuration["only_on_ip_change"]:
+            self.log.info("Skipping check based on IP change.")
+        return (
+            not self.configuration["only_on_ip_change"]
+            or self.stolen()
+            or self.ip_changed(current_ip)
+        )
 
     def public_ip(self):
         # type: () -> Union[str, None]
