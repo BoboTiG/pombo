@@ -279,8 +279,8 @@ class Pombo(object):
                     user = line.split(" ")[0]
                     if ":0" in line:
                         break
-        user = user.strip()
-        self.log.debug("Username is %s", user)
+            user = user.strip()
+        self.log.debug('Username is %s', user)
         return user
 
     def get_manufacturer(self):
