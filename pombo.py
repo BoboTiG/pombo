@@ -398,7 +398,7 @@ class Pombo(object):
                 proxies['https'] = self.configuration['https_proxy']
 
         ret = str('')
-        ssl_cert_verif = url.split(':') == 'https'
+        ssl_cert_verif = url.split(':')[0] == 'https'
         auth = ()
 
         if self.configuration['auth_server'] == url.split('/')[2]:
