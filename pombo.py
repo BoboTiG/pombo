@@ -859,12 +859,12 @@ Date/time: {7} (local time) {1}
                 if current_ip and self.need_report(current_ip):
                     wait = 60 * self.configuration["time_limit"] // 3
                     retries = 3 if self.stolen() else 1
-                    for i in range(1, retries):
-                        self.log.info("* Attempt %d/%d *", i, retries)
+                    for retry in range(retries):
+                        self.log.info("* Attempt %d/%d *", retry, retries)
                         start = time.time()
                         self.snapshot(current_ip)
                         runtime = time.time() - start
-                        if i < 3:
+                        if retry < retries - 1:
                             time.sleep(wait - runtime)
 
 
