@@ -145,6 +145,8 @@ class Pombo(object):
     encoding = sys.stdin.encoding or getdefaultlocale()[1] or "utf-8"
     configuration = {}  # type: Dict[str, Any]
     vc_version = "0.9.5"
+    stolen_var = False
+    stolen_last_update = 0
 
     def __init__(self, testing=False):
         # type: (bool) -> None
@@ -683,26 +685,36 @@ class Pombo(object):
     def stolen(self):
         # type: () -> bool
         """ Returns True is the computer was stolen. """
+        now = time.time()
 
-        salt = "just check if I am a stolen one"
-        key = self.configuration["password"]
-        msg = salt + "***" + self.configuration["check_file"]
-        if sys.version_info >= (3,):
-            key = key.encode()
-            msg = msg.encode()
-        authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
-        parameters = {
-            "filename": self.configuration["check_file"],
-            "filedata": salt,
-            "verify": authtoken,
-        }
-        for distant in self.configuration["server_url"].split("|"):
-            self.log.info("Checking status on %s", urlsplit(distant).netloc)
-            if self.request_url(distant, "post", parameters) == "1":
-                self.log.info("<<!>> Stolen computer <<!>>")
-                return True
-        self.log.info("Computer *does not* appear to be stolen.")
-        return False
+        # Small filter to prevent spamming the server at every check on stolenness
+        if (now - self.stolen_last_update) > 2:
+            self.stolen_last_update = time.time()
+
+            key = self.configuration["password"]
+            msg = salt + "***" + self.configuration["check_file"]
+            if sys.version_info >= (3,):
+                key = key.encode()
+                msg = msg.encode()
+            authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
+            parameters = {
+                "filename": self.configuration["check_file"],
+                "filedata": salt,
+                "verify": authtoken,
+            }
+
+            self.stolen_var = False
+
+            for distant in self.configuration["server_url"].split("|"):
+                self.log.info("Checking status on %s", urlsplit(distant).netloc)
+                if self.request_url(distant, "post", parameters) == "1":
+                    self.log.info("<<!>> Stolen computer <<!>>")
+                    self.stolen_var = True
+
+            if not self.stolen_var:
+                self.log.info("Computer *does not* appear to be stolen.")
+
+        return self.stolen_var
 
     def system_report(self, current_ip):
         # type: (str) -> str
@@ -826,9 +838,14 @@ Date/time: {7} (local time) {1}
 
             self.snapshot(current_ip)
             wait_stolen = self.configuration["time_limit"] // 3
+            if self.configuration["only_on_ip_change"]:
+                complement = "on ip change"
+            else:
+                complement = "every {} minutes".format(self.configuration["time_limit"])
             self.log.info(
-                "==> In real scenario, Pombo will send a report" " each %d minutes.",
+                "==> In real scenario, Pombo will send a report every %d minutes if stolen, %s otherwise.",
                 wait_stolen,
+                complement,
             )
         else:
             if self.os_name == "Windows":
@@ -841,15 +858,17 @@ Date/time: {7} (local time) {1}
                         start = time.time()
                         self.snapshot(current_ip)
                         runtime = time.time() - start
+                    if self.stolen():
                         time.sleep(wait_stolen - runtime)
                     else:
-                        time.sleep(wait_normal)
+                        time.sleep(wait_normal - runtime)
             else:
                 current_ip = self.public_ip()
                 if current_ip and self.need_report(current_ip):
                     wait = 60 * self.configuration["time_limit"] // 3
-                    for i in range(1, 4):
-                        self.log.info("* Attempt %d/3 *", i)
+                    retries = 3 if self.stolen() else 1
+                    for i in range(1, retries):
+                        self.log.info("* Attempt %d/%d *", i, retries)
                         start = time.time()
                         self.snapshot(current_ip)
                         runtime = time.time() - start
