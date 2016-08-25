@@ -3,9 +3,7 @@
 
 # Pombo: convert the configuration file from version 0.0.10 to 0.0.11.
 
-
 from os import name
-from sys import exit
 
 
 CONF = '/etc/pombo.conf'

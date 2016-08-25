@@ -60,11 +60,11 @@ try:
         from mss import mss, ScreenshotError
 except ImportError as ex:
     print(ex)
-    sys.exit(1)
+    exit(1)
 
-__version__ = '1.0.3'
-__author__ = 'JMSinfo'
-__date__ = '$18-May-2015 14:28:57$'
+__version__ = '1.0.4'
+__author__ = 'Tiger-222'
+__date__ = '$25-Aou-2016 10:25:57$'
 
 
 # ----------------------------------------------------------------------
@@ -128,7 +128,7 @@ class Pombo(object):
             self.os_name = oses_[platform.system()]
         except KeyError:
             print("System '{0}' not implemented.".format(platform.system()))
-            sys.exit(1)
+            exit(1)
 
         if self.os_name == 'Windows':
             self.ip_file = 'c:\\pombo\\pombo'
@@ -152,10 +152,10 @@ class Pombo(object):
         if not os.path.isfile(self.conf):
             printerr("[Errno 2] No such file or directory: '{}'"
                      .format(self.conf))
-            sys.exit(1)
+            exit(1)
         if not os.access(self.conf, os.R_OK):
             printerr("[Errno 13] Permission denied: '{}'".format(self.conf))
-            sys.exit(1)
+            exit(1)
 
         self.log.debug('Loading configuration')
         defaults = {
@@ -189,7 +189,7 @@ class Pombo(object):
             conf.read(self.conf)
         except Error as ex:
             self.log.error(ex)
-            sys.exit(1)
+            exit(1)
 
         # Primary parameters
         config['gpgkeyid'] = conf.get('General', 'gpgkeyid')
@@ -204,7 +204,7 @@ class Pombo(object):
                 error = True
         if error:
             self.log.critical('Pombo has to stop, please check parameters.')
-            sys.exit(0)
+            exit(0)
 
         # Secondary parameters (auth., email, commands, ...)
         config['email_id'] = conf.get('General', 'email_id')
@@ -310,8 +310,9 @@ class Pombo(object):
 
         self.log.handlers = []
         self.log.setLevel(level)
-        formatter = logging.Formatter(
-            '%(asctime)s [%(levelname)s] %(funcName)s::L%(lineno)d %(message)s')
+        fmt = '%(asctime)s [%(levelname)s] '
+        fmt += '%(funcName)s::L%(lineno)d %(message)s'
+        formatter = logging.Formatter(fmt)
 
         # Log to file
         try:
@@ -382,7 +383,7 @@ class Pombo(object):
         # accumulating snapshots.)
         if not current_ip:
             self.log.error(
-                'Computer does not seem to be connected to the internet. Aborting.')
+                'Computer does not seem to be connected to the internet.')
         return None
 
     def request_url(self, url, method='get', params=None):
@@ -448,7 +449,8 @@ class Pombo(object):
                                  % (user,filepath),useshell=True)
         '''
 
-        self.log.debug('% & useshell=%' % commandline, useshell)
+        cmd_line = '{} useshell={}'.format(commandline, useshell)
+        self.log.debug(cmd_line)
         try:
             myprocess = subprocess.Popen(commandline,
                                          stdout=subprocess.PIPE,
@@ -596,7 +598,7 @@ class Pombo(object):
             if self.configuration['gpg_binary'] == '':
                 self.log.critical(
                     'The path to the GPG binary is not set. Aborting.')
-                sys.exit(1)
+                exit(1)
             gpgfilepath += '.gpg'
             self.runprocess([self.configuration['gpg_binary'], '--batch',
                              '--no-default-keyring', '--trust-model', 'always',
@@ -605,7 +607,7 @@ class Pombo(object):
             os.remove(zipfilepath)
             if not os.path.isfile(gpgfilepath):
                 self.log.critical('GPG encryption failed. Aborting.')
-                sys.exit(1)
+                exit(1)
 
         # Read GPG file
         with open(gpgfilepath, 'r+b') as fileh:

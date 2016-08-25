@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # Pombo - check for needed modules
-import sys
 
 ok = False
 for m in ['requests']:
@@ -17,4 +16,4 @@ except Exception as ex:
     print(' ! Python module needed but not installed: ipy')
     ok = True
 
-sys.exit(ok)
+exit(ok)
