@@ -3,7 +3,7 @@
 '''
 Pombo
 Theft-recovery tracking opensource software
-http://pombo.jmsinfo.co
+https://github.com/BoboTiG/pombo
 http://sebsauvage.net/pombo
 
 This program is distributed under the OSI-certified zlib/libpnglicense .

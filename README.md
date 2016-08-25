@@ -3,18 +3,6 @@ Pombo
 
 Theft-recovery tracking opensource software.
 
-
-Links:
-
-* [Documentation française](http://bobotig.fr/index.php?c=projets/pombo/)
-* [Installation process](http://www.sebsauvage.net/pombo/installation.html)
-* [FAQ](http://www.sebsauvage.net/pombo/faq.html)
-
-Variants (could be outdated) :
-
-* [FTP version](https://github.com/tuxmouraille/MesApps/tree/master/Pombo)
-* [Google App Engine version](https://github.com/solsticedhiver/pombo_on_appengine)
-
 What is it ?
 ===
 
@@ -37,7 +25,7 @@ Features
 * __Secure__: No port to open, and does not permit remote access.
 * __Does not rely on third-party sites/services__: You control the client and the server. You can change servers anytime.
 * __Totally free__: No software fee, no service subscription.
-* __Opensource__: You can hack it, adapt it.
+* __Open-source__: You can hack it, adapt it.
 * __Reliable backends__: Pombo does not try to re-invent the wheel and uses solid backends (eg. no home-made encryption, uses rock-solid GnuPG)
 * __Only__ takes a snapshot __if an internet connection is available__.
 * __Discreet__: Uses zero CPU, zero memory and does not appear in process list when not active (not a daemon).
@@ -61,8 +49,6 @@ Pombo sends only GnuPG encrypted zip files (for example ubuntu_20090824_155501.z
 * [ubuntu\_20090824\_155501.txt](http://www.sebsauvage.net/pombo/ubuntu\_20090824\_155501.txt) : The textual report (real information is garbled for privacy reasons).
 * [ubuntu\_20090824\_155501\_screenshot.png](http://www.sebsauvage.net/pombo/ubuntu\_20090824\_155501\_screenshot.png) : The screenshot.
 * [ubuntu\_20090824\_155501-webcam.jpeg](http://www.sebsauvage.net/pombo/ubuntu\_20090824\_155501\_webcam.jpeg) : The webcam snapshot.
-
-![Preview](https://tiger-222.fr/img/preview-pombo.jpg)
 
 What is provided
 ===
