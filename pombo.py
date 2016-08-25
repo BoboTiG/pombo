@@ -54,7 +54,6 @@ try:
     import mss
     import requests
     import IPy
-    from requests.exceptions import ConnectionError, RequestException
     if os.name == 'nt':
         from PIL import Image
         from VideoCapture import Device
@@ -423,7 +422,7 @@ class Pombo(object):
                                     auth=auth,
                                     timeout=30)
             ret = req.content.strip().decode()
-        except RequestException as ex:
+        except requests.exceptions.RequestException as ex:
             self.log.error(ex)
         self.log.debug('Content: %s', ret)
         return ret
@@ -842,7 +841,7 @@ class PomboArg(object):
         version = ''
         try:
             req = requests.get(Pombo.uplink, verify=True)
-        except ConnectionError as ex:
+        except requests.exceptions.RequestException as ex:
             print(' ! Arf, check failed: {} !'.format(ex))
             print(' . Please check later.')
             return
