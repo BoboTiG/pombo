@@ -51,18 +51,18 @@ except ImportError:
     from ConfigParser import Error, SafeConfigParser
 
 try:
+    import mss
     import requests
+    import IPy
     from requests.exceptions import ConnectionError, RequestException
-    from IPy import IP
     if os.name == 'nt':
         from PIL import Image
         from VideoCapture import Device
-        from mss import mss, ScreenshotError
 except ImportError as ex:
     print(ex)
     exit(1)
 
-__version__ = '1.0.4'
+__version__ = '1.0.5'
 __author__ = 'Tiger-222'
 __date__ = '$25-Aou-2016 10:25:57$'
 
@@ -179,7 +179,7 @@ class Pombo(object):
             'wifi_access_points': '',
             'traceroute': '',
             'network_trafic': '',
-            'screenshot': '',
+            'screenshot': True,
             'camshot': '',
             'camshot_filetype': ''
         }
@@ -224,7 +224,7 @@ class Pombo(object):
                                                 'wifi_access_points')
         config['traceroute'] = conf.get('Commands', 'traceroute')
         config['network_trafic'] = conf.get('Commands', 'network_trafic')
-        config['screenshot'] = conf.get('Commands', 'screenshot')
+        config['screenshot'] = conf.getboolean('Commands', 'screenshot')
         config['camshot'] = conf.get('Commands', 'camshot')
         config['camshot_filetype'] = conf.get('Commands', 'camshot_filetype')
 
@@ -372,7 +372,7 @@ class Pombo(object):
             self.log.info(txt_, distant.split('/')[2])
             try:
                 current_ip = self.request_url(distant, 'get', {'myip': '1'})
-                IP(current_ip)
+                IPy.IP(current_ip)
             except (gaierror, ValueError) as ex:
                 self.log.error(ex)
                 return None
@@ -486,31 +486,24 @@ class Pombo(object):
 
         if not self.configuration['screenshot']:
             self.log.info('Skipping screenshot.')
-            return None
+            return
 
-        temp = gettempdir()
         self.log.info('Taking screenshot')
-        filepath = '{}_screenshot'.format(os.path.join(temp, filename))
         if not self.user:
             self.log.error(
                 'Could not determine current user. Cannot take screenshot.')
-            return None
+            return
 
-        if self.os_name == 'Windows':
-            try:
-                img = mss()
-                filepath = next(img.save(output=filepath, screen=-1))
-            except (ValueError, ScreenshotError) as ex:
-                self.log.error(ex)
-        else:
-            filepath += '.jpg'
-            cmd = self.configuration['screenshot']
-            cmd = cmd.replace('<user>', self.user)
-            cmd = cmd.replace('<filepath>', filepath)
-            self.runprocess(cmd, useshell=True)
-        if not os.path.isfile(filepath):
-            return None
-        return filepath
+        temp = gettempdir()
+        filepath = '{}_screenshot-%d.png'.format(os.path.join(temp, filename))
+        try:
+            with mss.mss() as screenshotter:
+                for filename in screenshotter.save(output=filepath):
+                    self.log.debug(filename)
+                    yield filename
+        except mss.ScreenshotError as ex:
+            self.log.error(ex)
+            return
 
     def snapshot_sendto_server(self, filename, filepath, data):
         ''' Compute authentication token and send the report to all servers.
@@ -563,9 +556,8 @@ class Pombo(object):
         filestozip = []
         filestozip.append(filepath)
 
-        # Take a screenshot
-        screen = self.screenshot(report_name)
-        if screen:
+        # Take screenshot(s)
+        for screen in self.screenshot(report_name):
             filestozip.append(screen)
 
         # Take a webcam snapshot
@@ -735,6 +727,7 @@ Date/time: {7} (local time) {1}
                     filepath = new_path_
         if not os.path.isfile(filepath):
             return None
+        self.log.debug(filepath)
         return filepath
 
     def work(self):
@@ -874,9 +867,11 @@ class PomboArg(object):
         ver = sys.version_info
         print('I am using Python {}.{}.{}'.format(ver.major, ver.minor,
                                                   ver.micro))
+        print('            & MSS {}'.format(mss.__version__))
+        print('            & IPy {}'.format(IPy.__version__))
+        print('        & request {}'.format(requests.__version__))
         if platform.system() == 'Windows':
-            print('with VideoCapture {}'.format(Pombo.vc_version))
-            print('            & MSS {}'.format(mss.__version__))
+            print('   & VideoCapture {}'.format(Pombo.vc_version))
             print('            & PIL {}'.format(Image.VERSION))
 
 
