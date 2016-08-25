@@ -2,5 +2,4 @@
 - Travis-CI (GNU/Linux, macOS and Windows)
 - [Windows] Update Inno Setup + modern wizard style
 - [Windows] Python 3 (#10)
-- [Windows] MSS 5 (#11)
 - Rewrite the documentation and store it on readthedocs.io
