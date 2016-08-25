@@ -2,18 +2,7 @@
 
 Theft-recovery tracking opensource software.
 
-Links:
-
-- [Documentation française](http://bobotig.fr/index.php?c=projets/pombo/)
-- [Installation process](http://www.sebsauvage.net/pombo/installation.html)
-- [FAQ](http://www.sebsauvage.net/pombo/faq.html)
-
-Variants (could be outdated) :
-
-- [FTP version](https://github.com/tuxmouraille/MesApps/tree/master/Pombo)
-- [Google App Engine version](https://github.com/solsticedhiver/pombo_on_appengine)
-
-## What is it ?
+## What is it?
 
 Pombo can help you recover your computer in the event it's stolen.
 It works on Windows, GNU/Linux and Mac OSX.
@@ -32,7 +21,7 @@ Pombo protects your privacy: Tracking information is encrypted with rock-solid G
 - __Secure__: No port to open, and does not permit remote access.
 - __Does not rely on third-party sites/services__: You control the client and the server. You can change servers anytime.
 - __Totally free__: No software fee, no service subscription.
-- __Opensource__: You can hack it, adapt it.
+- __Open-source__: You can hack it, adapt it.
 - __Reliable backends__: Pombo does not try to re-invent the wheel and uses solid backends (eg. no home-made encryption, uses rock-solid GnuPG)
 - __Only__ takes a snapshot __if an internet connection is available__.
 - __Discreet__: Uses zero CPU, zero memory and does not appear in process list when not active (not a daemon).
