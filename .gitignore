@@ -15,3 +15,7 @@ gui/build/
 pombo-config.pro.user
 update-translations.sh
 *.autosave
+
+# Dev ideas
+qrcode/
+web/
