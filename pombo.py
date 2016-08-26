@@ -134,7 +134,6 @@ class Pombo(object):
             self.ip_file = 'c:\\pombo\\pombo'
             self.conf = 'c:\\pombo\\pombo.conf'
             self.log_file = os.path.join(gettempdir(), 'pombo.log')
-
         self.testing = bool(testing)
         self.log = logging.getLogger()
         self.user = self.current_user()
@@ -148,7 +147,6 @@ class Pombo(object):
 
     def config(self):
         ''' Get configuration from conf file. '''
-
         if not os.path.isfile(self.conf):
             printerr("[Errno 2] No such file or directory: '{}'"
                      .format(self.conf))
@@ -352,7 +350,6 @@ class Pombo(object):
         ''' Return the stolen state or the computer IP.
             If one of them is True, so we need to send a report.
         '''
-
         if not self.configuration['only_on_ip_change']:
             self.log.info('Skipping check based on IP change.')
         return not self.configuration['only_on_ip_change'] or self.stolen() or self.ip_changed(current_ip)
@@ -620,9 +617,7 @@ class Pombo(object):
         ''' Returns True is the computer was stolen. '''
         now = time.time()
         if (now - self.stolen_last_update) > 2:     # small filter to prevent spamming the server at every check on stolenness
-            
             self.stolen_last_update = time.time()
-            
             salt = 'just check if I am a stolen one'
             key = self.configuration['password']
             msg = salt + '***' + self.configuration['check_file']
@@ -777,13 +772,13 @@ Date/time: {7} (local time) {1}
                 current_ip = self.public_ip()
                 if current_ip and self.need_report(current_ip):
                     wait = 60 * self.configuration['time_limit'] // 3
-                    numRetries = 3 if self.stolen() else 1
-                    for i in range(0, numRetries):
-                        self.log.info('* Attempt %d/%d *', i, numRetries)
+                    num_retries = 3 if self.stolen() else 1
+                    for i in range(0, num_retries):
+                        self.log.info('* Attempt %d/%d *', i, num_retries)
                         start = time.time()
                         self.snapshot(current_ip)
                         runtime = time.time() - start
-                        if i < numRetries - 1:
+                        if i < num_retries - 1:
                             time.sleep(wait - runtime)
 
 
