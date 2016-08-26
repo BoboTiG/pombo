@@ -8,5 +8,4 @@ __Note:__ do not work on the master branch but on the _develop_ one.
 
 ### Code checks
 
-- [X] PEP8 compliant
-- [ ] `flake8` passed (bonus)
+- [ ] PEP8 compliant (using `pep8` of `flake8` tools)

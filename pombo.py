@@ -61,9 +61,9 @@ except ImportError as ex:
     print(ex)
     exit(1)
 
-__version__ = '1.0.5'
+__version__ = '1.0.6'
 __author__ = 'Tiger-222'
-__date__ = '$25-Aou-2016 10:25:57$'
+__date__ = '$26-Aou-2016 11:06:57$'
 
 
 # ----------------------------------------------------------------------
@@ -146,6 +146,7 @@ class Pombo(object):
 
     def config(self):
         ''' Get configuration from conf file. '''
+
         if not os.path.isfile(self.conf):
             printerr("[Errno 2] No such file or directory: '{}'"
                      .format(self.conf))
@@ -608,8 +609,11 @@ class Pombo(object):
 
     def stolen(self):
         ''' Returns True is the computer was stolen. '''
+
         now = time.time()
-        if (now - self.stolen_last_update) > 2:     # small filter to prevent spamming the server at every check on stolenness
+        # Small filter to prevent spamming the server at every check on
+        # stolenness.
+        if now - self.stolen_last_update > 2:
             self.stolen_last_update = time.time()
             salt = 'just check if I am a stolen one'
             key = self.configuration['password']
@@ -744,9 +748,12 @@ Date/time: {7} (local time) {1}
             if self.configuration['only_on_ip_change']:
                 complement = 'on ip change'
             else:
-                complement = 'every {} minutes'.format(self.configuration['time_limit'])
-            self.log.info('==> In real scenario, Pombo will send a report' +
-                          ' every {} minutes if stolen, {} otherwise.'.format(wait_stolen,complement))
+                complement = 'every {} minutes'.format(
+                    self.configuration['time_limit'])
+            txt = '==> In real scenario, Pombo will send a report'
+            txt += ' every {} minutes if stolen, {} otherwise.'.format(
+                wait_stolen, complement)
+            self.log.info(txt)
         else:
             if self.os_name == 'Windows':
                 # Cron job like for Windows :s
@@ -758,7 +765,7 @@ Date/time: {7} (local time) {1}
                         start = time.time()
                         self.snapshot(current_ip)
                         runtime = time.time() - start
-                    if self.stolen(): 
+                    if self.stolen():
                         time.sleep(wait_stolen - runtime)
                     else:
                         time.sleep(wait_normal - runtime)
