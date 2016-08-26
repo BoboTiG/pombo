@@ -34,7 +34,7 @@ cat <<EOM
 
 Thank you to have used Pombo!
 If you have critics, suggestions, advices or ideas:
-    bobotig (at) gmail (dot) com
+    https://github.com/BoboTiG/pombo
 
 EOM
 

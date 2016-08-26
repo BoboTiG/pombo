@@ -5,20 +5,22 @@
 
 if [ $(id -ru) -ne 0 ]; then
     echo "! You need to have root rights !"
-    sudo $0
-    exit 0
+    exit 1
 fi
 
 inst_dir=/usr/local/bin
 [ -d ${inst_dir} ] || inst_dir=/usr/local/sbin
 
+src_dir=""
+[ -f pombo.py ] || src_dir="../"
+
 echo ""
 echo "Installing (verbose) ..."
 [ -f /etc/pombo.conf ] && mv -fv /etc/pombo.conf /etc/pombo.conf.$(date '+%s')
-install -v pombo.conf /etc
+install -v ${src_dir}pombo.conf /etc
 echo "« chmod 600 /etc/pombo.conf »"
 chmod 600 /etc/pombo.conf
-install -v pombo.py ${inst_dir}/pombo
+install -v ${src_dir}pombo.py ${inst_dir}/pombo
 echo "« chmod +x ${inst_dir}/pombo »"
 chmod +x ${inst_dir}/pombo
 

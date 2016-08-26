@@ -4,16 +4,10 @@
 # Pombo - check for needed modules
 
 ok = False
-for m in ['requests']:
+for m in ['mss', 'requests', 'IPy']:
     try:
         __import__(m)
     except Exception as ex:
         print(' ! Python module needed but not installed: %s' % m)
         ok = True
-try:
-    from IPy import IP
-except Exception as ex:
-    print(' ! Python module needed but not installed: ipy')
-    ok = True
-
 exit(ok)
