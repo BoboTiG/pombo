@@ -374,36 +374,40 @@ class Pombo(object):
         # type: (str) -> bool
         """ Check if current_ip is already known from ip_file. """
 
-        if self.configuration["only_on_ip_change"]:
-            # Read previous IP
-            if not os.path.isfile(self.ip_file):
-                txt_ = 'First run, writing down IP in "%s".'
-                self.log.info(txt_, self.ip_file)
-                with open(self.ip_file, "w+") as fileh:
-                    fileh.write(hash_string(curr_ip))
-                return True
-
-            with open(self.ip_file) as fileh:
+        # Read previous IP
+        if not os.path.isfile(self.ip_file):
+            self.log.info("First run, writing down IP in %r.", self.ip_file)
+            with open(self.ip_file, "w+") as fileh:
+                fileh.write(hash_string(curr_ip))
+            return True
+        else:
+            with open(self.ip_file, "r") as fileh:
                 prev_ips = fileh.readlines()
-            if not hash_string(curr_ip) in [ip.strip() for ip in prev_ips]:
-                self.log.info("IP has changed.")
-                return True
-            self.log.info("IP has not changed. Aborting.")
+                if hash_string(curr_ip) not in [ip.strip() for ip in prev_ips]:
+                    self.log.info("IP has changed.")
+                    return True
+                self.log.info("IP has not changed.")
         return False
 
     def need_report(self, current_ip):
-        # type: (str) -> bool
+        # type: (str) -> Tuple[bool, bool]
         """ Return the stolen state or the computer IP.
             If one of them is True, so we need to send a report.
+
+            Returned values: (report_needed: Bool, is_stolen: Bool)
+                report_needed: True if a report is needed
+                is_stolen: True if computer is marked as stolen
         """
+
+        is_stolen = self.stolen()
+        if is_stolen:
+            return True, True
 
         if not self.configuration["only_on_ip_change"]:
             self.log.info("Skipping check based on IP change.")
-        return (
-            not self.configuration["only_on_ip_change"]
-            or self.stolen()
-            or self.ip_changed(current_ip)
-        )
+            return False, False
+
+        return self.ip_changed(current_ip), False
 
     def public_ip(self):
         # type: () -> Union[str, None]
@@ -415,6 +419,7 @@ class Pombo(object):
         if not self.configuration:
             self.configuration = self.config()
 
+        current_ip = ""
         for distant in self.configuration["server_url"].split("|"):
             self.log.info("Retrieving IP address from %s", urlsplit(distant).netloc)
             try:
@@ -846,25 +851,28 @@ Date/time: {7} (local time) {1}
                     wait_normal = 60 * self.configuration["time_limit"]
                     wait_stolen = wait_normal // 3
                     current_ip = self.public_ip()
-                    if current_ip and self.need_report(current_ip):
+                    report_needed, is_stolen = self.need_report(current_ip)
+                    if current_ip and report_needed:
                         start = time.time()
                         self.snapshot(current_ip)
                         runtime = time.time() - start
-                    if self.stolen():
+                    if is_stolen:
                         time.sleep(wait_stolen - runtime)
                     else:
                         time.sleep(wait_normal - runtime)
             else:
                 current_ip = self.public_ip()
-                if current_ip and self.need_report(current_ip):
+                report_needed, is_stolen = self.need_report(current_ip)
+                if current_ip and report_needed:
                     wait = 60 * self.configuration["time_limit"] // 3
-                    retries = 3 if self.stolen() else 1
-                    for retry in range(retries):
-                        self.log.info("* Attempt %d/%d *", retry, retries)
+                    if is_stolen:
+                        wait = 60
+                    for i in range(1, 4):
+                        self.log.info("* Attempt %d/3 *", i)
                         start = time.time()
                         self.snapshot(current_ip)
                         runtime = time.time() - start
-                        if retry < retries - 1:
+                        if i < 3:
                             time.sleep(wait - runtime)
 
 
