@@ -578,12 +578,8 @@ class Pombo(object):
 
         filedata = b64encode(data)
         os.remove(filepath)
-        key = self.configuration["password"]
-        if sys.version_info >= (3,):
-            key = key.encode()
-            msg = (str(filedata.decode()) + "***" + filename).encode()
-        else:
-            msg = filedata + "***" + filename
+        key = str(self.configuration["password"]).encode()
+        msg = str(str(filedata.decode()) + "***" + filename).encode()
         authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
 
         # Send to the webserver (HTTP POST).
@@ -685,13 +681,9 @@ class Pombo(object):
         # Small filter to prevent spamming the server at every check on stolenness
         if (now - self.stolen_last_update) > 2:
             self.stolen_last_update = time.time()
-
             salt = "just check if I am a stolen one"
-            key = self.configuration["password"]
-            msg = salt + "***" + self.configuration["check_file"]
-            if sys.version_info >= (3,):
-                key = key.encode()
-                msg = msg.encode()
+            key = str(self.configuration["password"]).encode()
+            msg = str(salt + "***" + self.configuration["check_file"]).encode()
             authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
             parameters = {
                 "filename": self.configuration["check_file"],
