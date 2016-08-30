@@ -61,9 +61,9 @@ except ImportError as ex:
     print(ex)
     exit(1)
 
-__version__ = '1.0.8'
+__version__ = '1.0.9'
 __author__ = 'Tiger-222'
-__date__ = '$26-Aou-2016 12:03:57$'
+__date__ = '$30-Aou-2016 19:50:57$'
 
 
 # ----------------------------------------------------------------------
@@ -520,13 +520,8 @@ class Pombo(object):
         filedata = b64encode(data)
         filesize = file_size(filepath)
         os.remove(filepath)
-        key = self.configuration['password']
-        if sys.version > '3':
-            key = key.encode()
-            msg = str(filedata.decode()) + '***' + filename
-            msg = msg.encode()
-        else:
-            msg = filedata + '***' + filename
+        key = str(self.configuration['password']).encode()
+        msg = str(str(filedata.decode()) + '***' + filename).encode()
         authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
 
         # Send to the webserver (HTTP POST).
@@ -627,11 +622,8 @@ class Pombo(object):
         if now - self.stolen_last_update > 2:
             self.stolen_last_update = time.time()
             salt = 'just check if I am a stolen one'
-            key = self.configuration['password']
-            msg = salt + '***' + self.configuration['check_file']
-            if sys.version > '3':
-                key = key.encode()
-                msg = msg.encode()
+            key = str(self.configuration['password']).encode()
+            msg = str(salt + '***' + self.configuration['check_file']).encode()
             authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
             parameters = {
                 'filename': self.configuration['check_file'],
