@@ -793,9 +793,9 @@ class PomboArg(object):
     ''' CLI arguments traitment. '''
 
     def __init__(self, arg=None):
-        '''
-        '''
+        ''' Init. '''
 
+        print('Pombo {}'.format(__version__))
         if arg and hasattr(self, arg):
             getattr(self, arg)()
         else:
@@ -885,7 +885,6 @@ class PomboArg(object):
 def main(argz):
     ''' Usage example. '''
 
-    print('Pombo {}'.format(__version__))
     try:
         if len(argz) > 1 and argz[1] != 'check':
             PomboArg(argz[1])
