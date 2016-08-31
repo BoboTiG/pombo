@@ -879,6 +879,7 @@ class PomboArg(object):
         elif arg == "list":
             arg = "list_ips"
 
+        print("Pombo {}".format(__version__))
         if arg and hasattr(self, arg):
             getattr(self, arg)()
         else:
@@ -978,7 +979,6 @@ def main(argz):
     # type: (List[str]) -> int
     """ Usage example. """
 
-    print("Pombo {}".format(__version__))
     try:
         if len(argz) > 1 and argz[1] != "check":
             PomboArg(argz[1])
