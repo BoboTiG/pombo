@@ -739,6 +739,7 @@ Date/time: {7} (local time) {1}
             self.configuration = self.config()
 
         if self.testing:
+            print('Pombo {}'.format(__version__))
             self.install_log_handlers(logging.DEBUG)
             self.log.info('[Test] Simulating stolen computer ...')
             current_ip = self.public_ip()
@@ -876,7 +877,6 @@ class PomboArg(object):
 def main(argz):
     ''' Usage example. '''
 
-    print('Pombo {}'.format(__version__))
     try:
         if len(argz) > 1 and argz[1] != 'check':
             PomboArg(argz[1])
