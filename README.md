@@ -12,7 +12,7 @@ It works on Windows, GNU/Linux and Mac OSX.
 How does it work ?
 ===
 
-Pombo works silentely in the background, hidden, and sends tracking information to a webserver of your choice.
+Pombo works silently hidden in the background, sending tracking information to a webserver of your choice.
 
 If your computer is stolen, just log into your webserver to get the lastest file uploaded by Pombo, decrypt and hand it to the police. They will have all they need to catch the thief: IP address, date/time, nearby routers, screenshot, and even a photo of his/her face if you have a webcam !
 
