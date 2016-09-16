@@ -1,6 +1,8 @@
 Pombo
 ===
 
+> **/!\\** Please, when working on Pombo, use the `develop` branch. Thank you.
+
 Theft-recovery tracking opensource software.
 
 What is it ?
