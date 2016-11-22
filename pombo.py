@@ -117,6 +117,8 @@ class Pombo(object):
     testing = False
     configuration = {}
     vc_version = '0.9.5'
+    stolen_var = False
+    stolen_last_update = 0
 
     def __init__(self, testing=False):
         ''' Pombo initializations. '''
@@ -132,7 +134,6 @@ class Pombo(object):
             self.ip_file = 'c:\\pombo\\pombo'
             self.conf = 'c:\\pombo\\pombo.conf'
             self.log_file = os.path.join(gettempdir(), 'pombo.log')
-
         self.testing = bool(testing)
         self.log = logging.getLogger()
         self.user = self.current_user()
@@ -146,7 +147,6 @@ class Pombo(object):
 
     def config(self):
         ''' Get configuration from conf file. '''
-
         if not os.path.isfile(self.conf):
             printerr("[Errno 2] No such file or directory: '{}'"
                      .format(self.conf))
@@ -248,7 +248,7 @@ class Pombo(object):
                     user = line.split(' ')[0]
                     if '(:0)' in line:
                         break
-        user = user.strip()
+            user = user.strip()
         self.log.debug('Username is %s', user)
         return user
 
@@ -344,16 +344,15 @@ class Pombo(object):
                     self.log.info('IP has changed.')
                     return True
                 self.log.info('IP has not changed. Aborting.')
-        else:
-            self.log.info('Skipping check based on IP change.')
         return False
 
     def need_report(self, current_ip):
         ''' Return the stolen state or the computer IP.
             If one of them is True, so we need to send a report.
         '''
-
-        return self.stolen() or self.ip_changed(current_ip)
+        if not self.configuration['only_on_ip_change']:
+            self.log.info('Skipping check based on IP change.')
+        return not self.configuration['only_on_ip_change'] or self.stolen() or self.ip_changed(current_ip)
 
     def public_ip(self):
         ''' Returns your public IP address.
@@ -398,7 +397,7 @@ class Pombo(object):
                 proxies['https'] = self.configuration['https_proxy']
 
         ret = str('')
-        ssl_cert_verif = url.split(':') == 'https'
+        ssl_cert_verif = url.split(':')[0] == 'https'
         auth = ()
 
         if self.configuration['auth_server'] == url.split('/')[2]:
@@ -616,26 +615,30 @@ class Pombo(object):
 
     def stolen(self):
         ''' Returns True is the computer was stolen. '''
-
-        salt = 'just check if I am a stolen one'
-        key = self.configuration['password']
-        msg = salt + '***' + self.configuration['check_file']
-        if sys.version > '3':
-            key = key.encode()
-            msg = msg.encode()
-        authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
-        parameters = {
-            'filename': self.configuration['check_file'],
-            'filedata': salt,
-            'verify': authtoken
-        }
-        for distant in self.configuration['server_url'].split('|'):
-            self.log.info('Checking status on %s', distant.split('/')[2])
-            if self.request_url(distant, 'post', parameters) == '1':
-                self.log.info('<<!>> Stolen computer <<!>>')
-                return True
-        self.log.info('Computer *does not* appear to be stolen.')
-        return False
+        now = time.time()
+        if (now - self.stolen_last_update) > 2:     # small filter to prevent spamming the server at every check on stolenness
+            self.stolen_last_update = time.time()
+            salt = 'just check if I am a stolen one'
+            key = self.configuration['password']
+            msg = salt + '***' + self.configuration['check_file']
+            if sys.version > '3':
+                key = key.encode()
+                msg = msg.encode()
+            authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
+            parameters = {
+                'filename': self.configuration['check_file'],
+                'filedata': salt,
+                'verify': authtoken
+            }
+            self.stolen_var = False
+            for distant in self.configuration['server_url'].split('|'):
+                self.log.info('Checking status on %s', distant.split('/')[2])
+                if self.request_url(distant, 'post', parameters) == '1':
+                    self.log.info('<<!>> Stolen computer <<!>>')
+                    self.stolen_var = True
+            if not self.stolen_var:
+                self.log.info('Computer *does not* appear to be stolen.')
+        return self.stolen_var
 
     def system_report(self, current_ip):
         ''' Returns a system report: computer name, date/time, public IP,
@@ -736,6 +739,7 @@ Date/time: {7} (local time) {1}
             self.configuration = self.config()
 
         if self.testing:
+            print('Pombo {}'.format(__version__))
             self.install_log_handlers(logging.DEBUG)
             self.log.info('[Test] Simulating stolen computer ...')
             current_ip = self.public_ip()
@@ -744,8 +748,12 @@ Date/time: {7} (local time) {1}
                 return
             self.snapshot(current_ip)
             wait_stolen = self.configuration['time_limit'] // 3
+            if self.configuration['only_on_ip_change']:
+                complement = 'on ip change'
+            else:
+                complement = 'every {} minutes'.format(self.configuration['time_limit'])
             self.log.info('==> In real scenario, Pombo will send a report' +
-                          ' each {} minutes.'.format(wait_stolen))
+                          ' every {} minutes if stolen, {} otherwise.'.format(wait_stolen,complement))
         else:
             if self.os_name == 'Windows':
                 # Cron job like for Windows :s
@@ -757,19 +765,21 @@ Date/time: {7} (local time) {1}
                         start = time.time()
                         self.snapshot(current_ip)
                         runtime = time.time() - start
+                    if self.stolen(): 
                         time.sleep(wait_stolen - runtime)
                     else:
-                        time.sleep(wait_normal)
+                        time.sleep(wait_normal - runtime)
             else:
                 current_ip = self.public_ip()
                 if current_ip and self.need_report(current_ip):
                     wait = 60 * self.configuration['time_limit'] // 3
-                    for i in range(1, 4):
-                        self.log.info('* Attempt %d/3 *', i)
+                    num_retries = 3 if self.stolen() else 1
+                    for i in range(0, num_retries):
+                        self.log.info('* Attempt %d/%d *', i, num_retries)
                         start = time.time()
                         self.snapshot(current_ip)
                         runtime = time.time() - start
-                        if i < 3:
+                        if i < num_retries - 1:
                             time.sleep(wait - runtime)
 
 
@@ -867,7 +877,6 @@ class PomboArg(object):
 def main(argz):
     ''' Usage example. '''
 
-    print('Pombo {}'.format(__version__))
     try:
         if len(argz) > 1 and argz[1] != 'check':
             PomboArg(argz[1])
