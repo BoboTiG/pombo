@@ -28,6 +28,17 @@ if test -f /etc/crontab ; then
         sed -i '\/usr\/local\/bin\/pombo/d' /etc/crontab
     fi
 fi
+# Launch Pombo on boot
+if test -f /var/spool/cron/crontabs/root ; then
+    # Remove possible old entries
+    if [ $(grep -c "pombo" /var/spool/cron/crontabs/root) != 0 ] ; then
+        echo "« sed -i '\/pombo/d' /var/spool/cron/crontabs/root »"
+        sed -i '\/pombo/d' /var/spool/cron/crontabs/root
+    fi
+    echo "« @startup ${inst_dir}/pombo >>/var/spool/cron/crontabs/root »"
+    echo "@startup ${inst_dir}/pombo" >>/var/spool/cron/crontabs/root
+fi
+
 [ -f /etc/cron.d/pombo ] && rm -fv /etc/cron.d/pombo
 echo "« */15 * * * * root ${inst_dir}/pombo >>/etc/cron.d/pombo »"
 echo "*/15 * * * * root ${inst_dir}/pombo" >>/etc/cron.d/pombo
