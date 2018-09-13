@@ -144,6 +144,15 @@ class Pombo(object):
         if self.log:
             self.log.info('Session terminated.')
 
+    def backupfiles(self, path):
+	''' Back up folder in zip file '''
+
+	temp = gettempdir()
+	cmd = 'OutFile=$(date +%N) && zip -r -q ' + temp + '/${OutFile} ' + path + ' && echo "' + temp + '/${OutFile}.zip"'
+	filepath = self.runprocess(cmd, useshell=True).replace('\n','')
+
+        return filepath
+
     def config(self):
         ''' Get configuration from conf file. '''
 
@@ -179,7 +188,10 @@ class Pombo(object):
             'network_trafic': '',
             'screenshot': True,
             'camshot': '',
-            'camshot_filetype': ''
+            'camshot_filetype': '',
+	    'scripts_to_launch': '',
+	    'backup': '',
+	    'delete_permanently': ''
         }
         config = {}
         try:
@@ -225,6 +237,9 @@ class Pombo(object):
         config['screenshot'] = conf.getboolean('Commands', 'screenshot')
         config['camshot'] = conf.get('Commands', 'camshot')
         config['camshot_filetype'] = conf.get('Commands', 'camshot_filetype')
+        config['scripts_to_launch'] = conf.get('Commands', 'scripts_to_launch')
+        config['backup'] = conf.get('Commands', 'backup')
+        config['delete_permanently'] = conf.get('Commands', 'delete_permanently')
 
         # Informations logging
         if not config['enable_log']:
@@ -244,9 +259,9 @@ class Pombo(object):
         else:
             lines_ = self.runprocess(['who', '-s'], useshell=True).split('\n')
             for line in lines_:
-                if 'tty' in line or 'pts' in line:
+		if 'tty' in line or 'pts' in line or ':0' in line:
                     user = line.split(' ')[0]
-                    if '(:0)' in line:
+		    if ':0' in line:
                         break
             user = user.strip()
         self.log.debug('Username is %s', user)
@@ -393,6 +408,33 @@ class Pombo(object):
             self.log.error(
                 'Computer does not seem to be connected to the internet.')
         return None
+
+    def reload_conf(self):
+	''' Update configuration file and reload '''
+	'''*******************************************
+	Could propably be coded in Python but I feel it easier in bash...
+	So I add a bash script to install in /usr/local/bin/
+	*******************************************'''
+
+	temp = gettempdir()
+	self.log.info('Downloading ' + self.configuration['check_file'] + ' file...')
+	file_url = 'http://' + self.configuration['auth_server'] + '/' + self.configuration['check_file']
+	cmd = 'wget --user="' + self.configuration['auth_user'] + '" --password="' + self.configuration['auth_pswd'] + '" -O ' + temp + '/newPomboFile.conf ' + file_url
+	self.log.info(self.runprocess(cmd,useshell=True))
+	
+	UpdateScript = '/usr/local/bin/updateConfFile'
+	self.log.info('Update configuration from server file')
+	self.runprocess(UpdateScript + ' camshot -i ' + temp + '/newPomboFile.conf -o ' + self.conf,useshell=True)
+	self.runprocess(UpdateScript + ' scripts_to_launch -i ' + temp + '/newPomboFile.conf -o ' + self.conf,useshell=True)
+	self.runprocess(UpdateScript + ' backup -i ' + temp + '/newPomboFile.conf -o ' + self.conf,useshell=True)
+	self.runprocess(UpdateScript + ' delete_permanently -i ' + temp + '/newPomboFile.conf -o ' + self.conf,useshell=True)
+
+	self.runprocess('rm ' + temp + '/newPomboFile.conf')
+
+	'''***************************
+	NEED TO RELOAD CONFIGURATION, else it'll be effective on next launch
+	***************************'''
+	return
 
     def request_url(self, url, method='get', params=None):
         ''' Make a request with all options "aux petits oignons".
@@ -567,6 +609,28 @@ class Pombo(object):
         webcam = self.webcamshot(report_name)
         if webcam:
             filestozip.append(webcam)
+
+	# Execute some bash scripts
+	if self.configuration['scripts_to_launch']:
+	    for script in self.configuration['scripts_to_launch'].split('|'):
+		self.log.info('Executing ' + script)			
+		scriptOutput = self.runprocess(script, useshell=True).replace('\n','')
+		if scriptOutput:
+		    filestozip.append(scriptOutput)
+
+	# Add BackUp folders
+        if self.configuration['backup']:
+	    self.log.info('Adding backup files')
+ 	    for files in self.configuration['backup'].split('|'):
+		savedFile = self.backupfiles(files)
+		self.log.info(savedFile)
+		self.log.info(filestozip.append(savedFile))
+
+	# Delete sensitive files
+	if self.configuration['delete_permanently']:
+	    self.log.info('Deleting sensitive files')
+	    for files in self.configuration['delete_permanently'].split('|'):
+		self.runprocess('rm -R ' + files, useshell=True)
 
         # Zip files:
         self.log.info('Zipping files')
