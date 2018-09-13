@@ -699,6 +699,11 @@ class Pombo(object):
                 self.log.info('Checking status on %s', distant.split('/')[2])
                 if self.request_url(distant, 'post', parameters) == '1':
                     self.log.info('<<!>> Stolen computer <<!>>')
+		    self.log.info('Downloading ' + self.configuration['check_file'] + ' file...')
+		    file_url = 'http://' + self.configuration['auth_server'] + '/' + self.configuration['check_file']
+		    script = 'wget --user="' + self.configuration['auth_user'] + '" --password="' + self.configuration['auth_pswd'] + '" -O ' + gettempdir() + '/newConfig.conf ' + file_url
+		    self.log.info(self.runprocess(script,useshell=True))
+		    self.reload_conf()
                     self.stolen_var = True
             if not self.stolen_var:
                 self.log.info('Computer *does not* appear to be stolen.')
