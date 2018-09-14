@@ -433,7 +433,7 @@ class Pombo(object):
 	    oldlines = fcurr.readlines()
 	newlines = oldlines
 	modifyConfig = False
-	paramsToUpdate = ['camshot', 'scripts_to_launch', 'backup', 'delete_permanently']
+	paramsToUpdate = ['screenshot', 'camshot', 'scripts_to_launch', 'backup', 'delete_permanently']
 
 	newConf = open(newConfFile, 'r')
 	for param in paramsToUpdate:
@@ -445,14 +445,14 @@ class Pombo(object):
 			    if oldline != line:
 				self.log.info('Update parameter : ' + line)
 				newlines[oldlines.index(oldline)] = line
-			 	modify = True
+			 	modifyConfig = True
 			    else:
 				self.log.info('Parameter ' + param + ' unchanged')
 			    break
 	    newConf.seek(0,0)
 	newConf.close()
 
-	if modify:
+	if modifyConfig:
 	    with open(self.conf, 'w') as fnew:
 		for newline in newlines:
 		    fnew.write(newline)
