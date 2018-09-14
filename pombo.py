@@ -512,7 +512,7 @@ class Pombo(object):
                                     proxies=proxies,
                                     verify=ssl_cert_verif,
                                     auth=auth,
-                                    timeout=300)
+                                    timeout=600)
                                     #timeout=30)
 
             if method == 'text':
@@ -904,7 +904,8 @@ Date/time: {7} (local time) {1}
                         self.snapshot(current_ip)
                         runtime = time.time() - start
                         if i < 3:
-                            time.sleep(wait - runtime)
+                            #time.sleep(wait - runtime)
+                            time.sleep(wait_sleep)
 
 
 class PomboArg(object):
