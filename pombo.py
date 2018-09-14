@@ -905,7 +905,7 @@ Date/time: {7} (local time) {1}
                         runtime = time.time() - start
                         if i < 3:
                             #time.sleep(wait - runtime)
-                            time.sleep(wait_sleep)
+                            time.sleep(wait)
 
 
 class PomboArg(object):
