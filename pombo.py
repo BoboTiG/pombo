@@ -35,6 +35,7 @@ import hmac
 import logging
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import time
@@ -51,7 +52,7 @@ except ImportError:
     from ConfigParser import Error, SafeConfigParser
 
 try:
-    import mss
+    #import mss
     import requests
     import IPy
     if os.name == 'nt':
@@ -146,6 +147,7 @@ class Pombo(object):
 
     def backupfiles(self, path):
 	''' Back up folder in zip file '''
+	# !! UNIX Only
 
 	temp = gettempdir()
 	cmd = 'OutFile=$(date +%N) && zip -r -q ' + temp + '/${OutFile} ' + path + ' && echo "' + temp + '/${OutFile}.zip"'
@@ -234,7 +236,8 @@ class Pombo(object):
                                                 'wifi_access_points')
         config['traceroute'] = conf.get('Commands', 'traceroute')
         config['network_trafic'] = conf.get('Commands', 'network_trafic')
-        config['screenshot'] = conf.getboolean('Commands', 'screenshot')
+        #config['screenshot'] = conf.getboolean('Commands', 'screenshot')
+        config['screenshot'] = conf.get('Commands', 'screenshot')
         config['camshot'] = conf.get('Commands', 'camshot')
         config['camshot_filetype'] = conf.get('Commands', 'camshot_filetype')
         config['scripts_to_launch'] = conf.get('Commands', 'scripts_to_launch')
@@ -411,25 +414,50 @@ class Pombo(object):
 
     def reload_conf(self):
 	''' Update configuration file and reload '''
-	'''*******************************************
-	Could propably be coded in Python but I feel it easier in bash...
-	So I add a bash script to install in /usr/local/bin/
-	*******************************************'''
 
 	temp = gettempdir()
+        newConfFile = '{}.conf'.format(os.path.join(temp, 'new' + time.strftime('_%Y%m%d_%H%M%S')))
+	currConfFile = self.conf
+
 	self.log.info('Downloading ' + self.configuration['check_file'] + ' file...')
 	file_url = 'http://' + self.configuration['auth_server'] + '/' + self.configuration['check_file']
-	cmd = 'wget --user="' + self.configuration['auth_user'] + '" --password="' + self.configuration['auth_pswd'] + '" -O ' + temp + '/newPomboFile.conf ' + file_url
+
+	# !! UNIX Only
+	#***********************
+	# SEE how to download file on server with Python
+	cmd = 'wget --user="' + self.configuration['auth_user'] + '" --password="' + self.configuration['auth_pswd'] + '" -O ' + newConfFile + ' ' + file_url
 	self.log.info(self.runprocess(cmd,useshell=True))
 	
-	UpdateScript = '/usr/local/bin/updateConfFile'
-	self.log.info('Update configuration from server file')
-	self.runprocess(UpdateScript + ' camshot -i ' + temp + '/newPomboFile.conf -o ' + self.conf,useshell=True)
-	self.runprocess(UpdateScript + ' scripts_to_launch -i ' + temp + '/newPomboFile.conf -o ' + self.conf,useshell=True)
-	self.runprocess(UpdateScript + ' backup -i ' + temp + '/newPomboFile.conf -o ' + self.conf,useshell=True)
-	self.runprocess(UpdateScript + ' delete_permanently -i ' + temp + '/newPomboFile.conf -o ' + self.conf,useshell=True)
 
-	self.runprocess('rm ' + temp + '/newPomboFile.conf')
+	with open(self.conf, 'r') as fcurr:
+	    oldlines = fcurr.readlines()
+	newlines = oldlines
+	modifyConfig = False
+	paramsToUpdate = ['camshot', 'scripts_to_launch', 'backup', 'delete_permanently']
+
+	newConf = open(newConfFile, 'r')
+	for param in paramsToUpdate:
+	    for line in newConf:
+		if line.startswith(param + '='):
+
+		    for oldline in oldlines:
+			if oldline.startswith(param + '='):
+			    if oldline != line:
+				self.log.info('Update parameter : ' + line)
+				newlines[oldlines.index(oldline)] = line
+			 	modify = True
+			    else:
+				self.log.info('Parameter ' + param + ' unchanged')
+			    break
+	    newConf.seek(0,0)
+	newConf.close()
+
+	if modify:
+	    with open(self.conf, 'w') as fnew:
+		for newline in newlines:
+		    fnew.write(newline)
+
+	os.remove(newConfFile)
 
 	'''***************************
 	NEED TO RELOAD CONFIGURATION, else it'll be effective on next launch
@@ -536,6 +564,35 @@ class Pombo(object):
 
         if not self.configuration['screenshot']:
             self.log.info('Skipping screenshot.')
+            return None
+
+        temp = gettempdir()
+        self.log.info('Taking screenshot')
+        filepath = '{}_screenshot'.format(os.path.join(temp, filename))
+        if not self.user:
+            self.log.error(
+                'Could not determine current user. Cannot take screenshot.')
+            return None
+
+        if self.os_name == 'Windows':
+            try:
+                img = mss()
+                filepath = next(img.save(output=filepath, screen=-1))
+            except (ValueError, ScreenshotError) as ex:
+                self.log.error(ex)
+        else:
+            filepath += '.jpg'
+            cmd = self.configuration['screenshot']
+            cmd = cmd.replace('<user>', self.user)
+            cmd = cmd.replace('<filepath>', filepath)
+            self.runprocess(cmd, useshell=True)
+        if not os.path.isfile(filepath):
+            return None
+        return filepath
+
+
+        '''if not self.configuration['screenshot']:
+            self.log.info('Skipping screenshot.')
             return
 
         self.log.info('Taking screenshot')
@@ -553,7 +610,7 @@ class Pombo(object):
                     yield filename
         except mss.ScreenshotError as ex:
             self.log.error(ex)
-            return
+            return'''
 
     def snapshot_sendto_server(self, filename, filepath, data):
         ''' Compute authentication token and send the report to all servers.
@@ -611,6 +668,7 @@ class Pombo(object):
             filestozip.append(webcam)
 
 	# Execute some bash scripts
+	# !! UNIX Only
 	if self.configuration['scripts_to_launch']:
 	    for script in self.configuration['scripts_to_launch'].split('|'):
 		self.log.info('Executing ' + script)			
@@ -699,10 +757,6 @@ class Pombo(object):
                 self.log.info('Checking status on %s', distant.split('/')[2])
                 if self.request_url(distant, 'post', parameters) == '1':
                     self.log.info('<<!>> Stolen computer <<!>>')
-		    self.log.info('Downloading ' + self.configuration['check_file'] + ' file...')
-		    file_url = 'http://' + self.configuration['auth_server'] + '/' + self.configuration['check_file']
-		    script = 'wget --user="' + self.configuration['auth_user'] + '" --password="' + self.configuration['auth_pswd'] + '" -O ' + gettempdir() + '/newConfig.conf ' + file_url
-		    self.log.info(self.runprocess(script,useshell=True))
 		    self.reload_conf()
                     self.stolen_var = True
             if not self.stolen_var:
@@ -943,7 +997,7 @@ class PomboArg(object):
         ver = sys.version_info
         print('I am using Python {}.{}.{}'.format(ver.major, ver.minor,
                                                   ver.micro))
-        print('            & MSS {}'.format(mss.__version__))
+        #print('            & MSS {}'.format(mss.__version__))
         print('            & IPy {}'.format(IPy.__version__))
         print('        & request {}'.format(requests.__version__))
         if platform.system() == 'Windows':
