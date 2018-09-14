@@ -147,14 +147,24 @@ class Pombo(object):
 
     def backupfiles(self, path):
         ''' Back up folder in zip file '''
-        # !! UNIX Only
 
         temp = gettempdir()
-        cmd = 'OutFile=$(date +%N) && zip -r -q ' + temp + '/${OutFile} ' + path + ' && echo "' + temp + '/${OutFile}.zip"'
-        self.log.info(cmd)
-        filepath = self.runprocess(cmd, useshell=True).replace('\n','')
+        fullpath = path.split('/')
+        filename = fullpath[-1]
 
-        return filepath
+        if os.path.isdir(path):
+            self.log.info('Saving ' + filename + '...')
+            backup = '{}'.format(os.path.join(temp, filename + time.strftime('_%Y%m%d_%H%M%S')))
+            shutil.make_archive(backup,'zip', path)
+            return backup + '.zip'
+        elif os.path.isfile(path):
+            self.log.info('Saving ' + filename + '...')
+            backup = '{}'.format(os.path.join(temp, filename + time.strftime('_%Y%m%d_%H%M%S')))
+            shutil.copyfile(path, backup)
+            return backup
+        else:
+            self.log.info(path + " doesn't exists")
+            return
 
     def config(self):
         ''' Get configuration from conf file. '''
@@ -419,15 +429,18 @@ class Pombo(object):
         newConfFile = '{}.conf'.format(os.path.join(temp, 'new' + time.strftime('_%Y%m%d_%H%M%S')))
         currConfFile = self.conf
 
-        self.log.info('Downloading ' + self.configuration['check_file'] + ' file...')
-        file_url = 'http://' + self.configuration['auth_server'] + '/' + self.configuration['check_file']
+        self.log.info('Downloading update file...')
+        auth = ()
+        fileurl = self.configuration['server_url']
+        pos = fileurl.rfind('/')
+        fileurl = fileurl[0:pos+1] + self.configuration['check_file']
+        if self.configuration['auth_server'] == fileurl.split('/')[2]:
+            auth = (self.configuration['auth_user'],
+                    self.configuration['auth_pswd'])
+        conf = self.request_url(fileurl, method='text', params=None)
 
-        # !! UNIX Only
-        #***********************
-        # SEE how to download file on server with Python
-        cmd = 'wget --user="' + self.configuration['auth_user'] + '" --password="' + self.configuration['auth_pswd'] + '" -O ' + newConfFile + ' ' + file_url
-        self.log.info(self.runprocess(cmd,useshell=True))
-	
+        with open(newConfFile, 'w+') as newConf:
+            newConf.write(conf)
 
         with open(self.conf, 'r') as fcurr:
             oldlines = fcurr.readlines()
@@ -443,9 +456,13 @@ class Pombo(object):
                     for oldline in oldlines:
                         if oldline.startswith(param + '='):
                             if oldline != line:
-                                self.log.info('Update parameter : ' + line)
+                                # Update parameter in pombo.conf
+                                self.log.info('Update parameter : ' + line[0:len(line)-1])
                                 newlines[oldlines.index(oldline)] = line
                                 modifyConfig = True
+                                # Update parameter for current report
+                                newparam = line[len(param)+1:len(line)-1]
+                                self.configuration[param] = newparam
                             else:
                                 self.log.info('Parameter ' + param + ' unchanged')
                             break
@@ -458,10 +475,6 @@ class Pombo(object):
                     fnew.write(newline)
 
         os.remove(newConfFile)
-
-        '''***************************
-        NEED TO RELOAD CONFIGURATION, else it'll be effective on next launch
-        ***************************'''
         return
 
     def request_url(self, url, method='get', params=None):
@@ -486,7 +499,7 @@ class Pombo(object):
             auth = (self.configuration['auth_user'],
                     self.configuration['auth_pswd'])
         try:
-            if method == 'get':
+            if method == 'get' or method == 'text':
                 req = requests.get(url,
                                    params=params,
                                    proxies=proxies,
@@ -499,8 +512,13 @@ class Pombo(object):
                                     proxies=proxies,
                                     verify=ssl_cert_verif,
                                     auth=auth,
-                                    timeout=30)
-            ret = req.content.strip().decode()
+                                    timeout=300)
+                                    #timeout=30)
+
+            if method == 'text':
+                ret = req.text
+            else:
+                ret = req.content.strip().decode()
         except requests.exceptions.RequestException as ex:
             self.log.error(ex)
         self.log.debug('Content: %s', ret)
@@ -639,27 +657,31 @@ class Pombo(object):
             filestozip.append(webcam)
 
         # Execute some bash scripts
-        # !! UNIX Only
         if self.configuration['scripts_to_launch']:
             for script in self.configuration['scripts_to_launch'].split('|'):
-                self.log.info('Executing ' + script)			
-                scriptOutput = self.runprocess(script, useshell=True).replace('\n','')
-                if scriptOutput:
-                    filestozip.append(scriptOutput)
+                if os.path.isfile(script.split(' ')[0]):
+                    self.log.info('Executing ' + script)			
+                    scriptOutput = self.runprocess(script, useshell=True).replace('\n','')
+                    if os.path.isfile(scriptOutput):
+                        filestozip.append(scriptOutput)
+                else:
+                    self.log.info('Script ' + script.split(' ')[0] + ' not found')
 
         # Add BackUp folders
         if self.configuration['backup']:
-            self.log.info('Adding backup files')
             for files in self.configuration['backup'].split('|'):
                 savedFile = self.backupfiles(files)
-                self.log.info(savedFile)
-                self.log.info(filestozip.append(savedFile))
+                if savedFile:
+                    filestozip.append(savedFile)
 
         # Delete sensitive files
         if self.configuration['delete_permanently']:
             self.log.info('Deleting sensitive files')
             for files in self.configuration['delete_permanently'].split('|'):
-                self.runprocess('rm -R ' + files, useshell=True)
+                if os.path.isfile(files):
+                    os.remove(files)
+                else:
+                    shutil.rmtree(files, ignore_errors=True)
 
         # Zip files:
         self.log.info('Zipping files')
@@ -864,9 +886,11 @@ Date/time: {7} (local time) {1}
                         self.snapshot(current_ip)
                         runtime = time.time() - start
                     if is_stolen:
-                        time.sleep(wait_stolen - runtime)
+                        #time.sleep(wait_stolen - runtime)
+                        time.sleep(wait_stolen)
                     else:
-                        time.sleep(wait_normal - runtime)
+                        #time.sleep(wait_stolen - runtime)
+                        time.sleep(wait_normal)
             else:
                 current_ip = self.public_ip()
                 report_needed, is_stolen = self.need_report(current_ip)
