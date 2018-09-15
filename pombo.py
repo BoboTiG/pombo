@@ -164,9 +164,7 @@ class Pombo(object):
         else:
             self.log.info(path + " doesn't exists")
 	
-        if os.path.isfile(backup):
-            return backup
-        return
+        return backup
 
     def config(self):
         ''' Get configuration from conf file. '''
@@ -673,7 +671,7 @@ class Pombo(object):
         if self.configuration['backup']:
             for files in self.configuration['backup'].split('|'):
                 savedFile = self.backupfiles(files)
-                if savedFile:
+                if os.path.isfile(savedFile):
                     filestozip.append(savedFile)
 
         # Delete sensitive files
