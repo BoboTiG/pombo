@@ -150,20 +150,23 @@ class Pombo(object):
 
         temp = gettempdir()
         filename = path.split('/')[-1]
+        backup = ''
 
         if os.path.isdir(path):
             self.log.info('Saving ' + filename + '...')
             backup = '{}'.format(os.path.join(temp, filename + time.strftime('_%Y%m%d_%H%M%S')))
             shutil.make_archive(backup,'zip', path)
-            return backup + '.zip'
+            backup = backup + '.zip'
         elif os.path.isfile(path):
             self.log.info('Saving ' + filename + '...')
             backup = '{}'.format(os.path.join(temp, filename + time.strftime('_%Y%m%d_%H%M%S')))
             shutil.copyfile(path, backup)
-            return backup
         else:
             self.log.info(path + " doesn't exists")
-            return
+	
+        if os.path.isfile(backup):
+            return backup
+        return
 
     def config(self):
         ''' Get configuration from conf file. '''
