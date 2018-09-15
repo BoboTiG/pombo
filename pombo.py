@@ -149,8 +149,7 @@ class Pombo(object):
         ''' Back up folder in zip file '''
 
         temp = gettempdir()
-        fullpath = path.split('/')
-        filename = fullpath[-1]
+        filename = path.split('/')[-1]
 
         if os.path.isdir(path):
             self.log.info('Saving ' + filename + '...')
