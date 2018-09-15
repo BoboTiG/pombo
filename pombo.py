@@ -39,7 +39,6 @@ import hmac
 import logging
 import os
 import platform
-import shutil
 import subprocess
 from socket import gaierror
 import sys
@@ -145,16 +144,6 @@ class Pombo(object):
         if self.log:
             self.log.info('Session terminated.')
 
-    def backupfiles(self, path):
-	''' Back up folder in zip file '''
-	# !! UNIX Only
-
-	temp = gettempdir()
-	cmd = 'OutFile=$(date +%N) && zip -r -q ' + temp + '/${OutFile} ' + path + ' && echo "' + temp + '/${OutFile}.zip"'
-	filepath = self.runprocess(cmd, useshell=True).replace('\n','')
-
-        return filepath
-
     def config(self):
         ''' Get configuration from conf file. '''
 
@@ -190,10 +179,7 @@ class Pombo(object):
             'network_trafic': '',
             'screenshot': '',
             'camshot': '',
-            'camshot_filetype': '',
-	    'scripts_to_launch': '',
-	    'backup': '',
-	    'delete_permanently': ''
+            'camshot_filetype': ''
         }
         config = {}
         try:
@@ -239,9 +225,6 @@ class Pombo(object):
         config['screenshot'] = conf.get('Commands', 'screenshot')
         config['camshot'] = conf.get('Commands', 'camshot')
         config['camshot_filetype'] = conf.get('Commands', 'camshot_filetype')
-        config['scripts_to_launch'] = conf.get('Commands', 'scripts_to_launch')
-        config['backup'] = conf.get('Commands', 'backup')
-        config['delete_permanently'] = conf.get('Commands', 'delete_permanently')
 
         # Informations logging
         if not config['enable_log']:
@@ -254,20 +237,18 @@ class Pombo(object):
         ''' Return the user who is currently logged in and uses the X
             session. None if could not be determined.
         '''
-	
+
         user = None
         if self.os_name == 'Windows':
             user = self.runprocess(['echo', '%userNAME%'], useshell=True)
         else:
             lines_ = self.runprocess(['who', '-s'], useshell=True).split('\n')
             for line in lines_:
-                '''if 'tty' in line or 'pts' in line:'''
-		if 'tty' in line or 'pts' in line or ':0' in line:
+                if 'tty' in line or 'pts' in line or ':0' in line:
                     user = line.split(' ')[0]
-                    '''if '(:0)' in line:'''
-		    if ':0' in line:
+                    if ':0' in line:
                         break
-            user = user.strip()
+        user = user.strip()
         self.log.debug('Username is %s', user)
         return user
 
@@ -306,7 +287,7 @@ class Pombo(object):
         cmd = {
             'Linux': '/usr/sbin/dmidecode --string system-serial-number',
             'Mac': '/usr/sbin/system_profiler SPHardwareDataType ' +
-                   '| grep system | cut -d: -f2',
+            '| grep system | cut -d: -f2',
             'Windows': 'wmic bios get serialnumber /value'
         }
         res = self.runprocess(cmd[self.os_name], useshell=True).strip()
@@ -383,7 +364,6 @@ class Pombo(object):
         if not self.configuration:
             self.configuration = self.config()
 
-        current_ip = ''
         for distant in self.configuration['server_url'].split('|'):
             txt_ = 'Retrieving IP address from %s'
             self.log.info(txt_, distant.split('/')[2])
@@ -402,58 +382,6 @@ class Pombo(object):
             self.log.error(
                 'Computer does not seem to be connected to the internet. Aborting.')
         return None
-
-    def reload_conf(self):
-	''' Update configuration file and reload '''
-
-	temp = gettempdir()
-        newConfFile = '{}.conf'.format(os.path.join(temp, 'new' + time.strftime('_%Y%m%d_%H%M%S')))
-	currConfFile = self.conf
-
-	self.log.info('Downloading ' + self.configuration['check_file'] + ' file...')
-	file_url = 'http://' + self.configuration['auth_server'] + '/' + self.configuration['check_file']
-
-	# !! UNIX Only
-	#***********************
-	# SEE how to download file on server with Python
-	cmd = 'wget --user="' + self.configuration['auth_user'] + '" --password="' + self.configuration['auth_pswd'] + '" -O ' + newConfFile + ' ' + file_url
-	self.log.info(self.runprocess(cmd,useshell=True))
-	
-
-	with open(self.conf, 'r') as fcurr:
-	    oldlines = fcurr.readlines()
-	newlines = oldlines
-	modifyConfig = False
-	paramsToUpdate = ['screenshot', 'camshot', 'scripts_to_launch', 'backup', 'delete_permanently']
-
-	newConf = open(newConfFile, 'r')
-	for param in paramsToUpdate:
-	    for line in newConf:
-		if line.startswith(param + '='):
-
-		    for oldline in oldlines:
-			if oldline.startswith(param + '='):
-			    if oldline != line:
-				self.log.info('Update parameter : ' + line)
-				newlines[oldlines.index(oldline)] = line
-			 	modifyConfig = True
-			    else:
-				self.log.info('Parameter ' + param + ' unchanged')
-			    break
-	    newConf.seek(0,0)
-	newConf.close()
-
-	if modifyConfig:
-	    with open(self.conf, 'w') as fnew:
-		for newline in newlines:
-		    fnew.write(newline)
-
-	os.remove(newConfFile)
-
-	'''***************************
-	NEED TO RELOAD CONFIGURATION, else it'll be effective on next launch
-	***************************'''
-	return
 
     def request_url(self, url, method='get', params=None):
         ''' Make a request with all options "aux petits oignons".
@@ -641,29 +569,6 @@ class Pombo(object):
         if webcam:
             filestozip.append(webcam)
 
-	# Execute some bash scripts
-	# !! UNIX Only
-	if self.configuration['scripts_to_launch']:
-	    for script in self.configuration['scripts_to_launch'].split('|'):
-		self.log.info('Executing ' + script)			
-		scriptOutput = self.runprocess(script, useshell=True).replace('\n','')
-		if scriptOutput:
-		    filestozip.append(scriptOutput)
-
-	# Add BackUp folders
-        if self.configuration['backup']:
-	    self.log.info('Adding backup files')
- 	    for files in self.configuration['backup'].split('|'):
-		savedFile = self.backupfiles(files)
-		self.log.info(savedFile)
-		self.log.info(filestozip.append(savedFile))
-
-	# Delete sensitive files
-	if self.configuration['delete_permanently']:
-	    self.log.info('Deleting sensitive files')
-	    for files in self.configuration['delete_permanently'].split('|'):
-		self.runprocess('rm -R ' + files, useshell=True)
-
         # Zip files:
         self.log.info('Zipping files')
         os.chdir(temp)
@@ -728,7 +633,6 @@ class Pombo(object):
             self.log.info('Checking status on %s', distant.split('/')[2])
             if self.request_url(distant, 'post', parameters) == '1':
                 self.log.info('<<!>> Stolen computer <<!>>')
-		self.reload_conf()
                 return True
         self.log.info('Computer *does not* appear to be stolen.')
         return False
