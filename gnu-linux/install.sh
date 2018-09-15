@@ -35,8 +35,8 @@ if test -f /var/spool/cron/crontabs/root ; then
         echo "« sed -i '\/pombo/d' /var/spool/cron/crontabs/root »"
         sed -i '\/pombo/d' /var/spool/cron/crontabs/root
     fi
-    echo "« @startup ${inst_dir}/pombo >>/var/spool/cron/crontabs/root »"
-    echo "@startup ${inst_dir}/pombo" >>/var/spool/cron/crontabs/root
+    echo "« @reboot ${inst_dir}/pombo >>/var/spool/cron/crontabs/root »"
+    echo "@reboot ${inst_dir}/pombo" >>/var/spool/cron/crontabs/root
 fi
 
 [ -f /etc/cron.d/pombo ] && rm -fv /etc/cron.d/pombo
