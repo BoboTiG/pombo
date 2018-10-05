@@ -28,7 +28,12 @@ if test -f /etc/crontab ; then
         sed -i '\/usr\/local\/bin\/pombo/d' /etc/crontab
     fi
 fi
+
 [ -f /etc/cron.d/pombo ] && rm -fv /etc/cron.d/pombo
+# Launch Pombo on boot
+echo "« @reboot root sleep 10 && ${inst_dir}/pombo >>/etc/cron.d/pombo »"
+echo "@reboot root sleep 10 && ${inst_dir}/pombo" >>/etc/cron.d/pombo
+# Launch Pombo every 15 minutes
 echo "« */15 * * * * root ${inst_dir}/pombo >>/etc/cron.d/pombo »"
 echo "*/15 * * * * root ${inst_dir}/pombo" >>/etc/cron.d/pombo
 [ -f /var/local/pombo ] && rm -fv /var/local/pombo

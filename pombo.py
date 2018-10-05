@@ -244,9 +244,9 @@ class Pombo(object):
         else:
             lines_ = self.runprocess(['who', '-s'], useshell=True).split('\n')
             for line in lines_:
-                if 'tty' in line or 'pts' in line:
+                if 'tty' in line or 'pts' in line or ':0' in line:
                     user = line.split(' ')[0]
-                    if '(:0)' in line:
+                    if ':0' in line:
                         break
         user = user.strip()
         self.log.debug('Username is %s', user)
