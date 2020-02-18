@@ -187,10 +187,10 @@ class Pombo(object):
 
         self.log.debug("Loading configuration")
         defaults = {
-            "gpgkeyid": None,
-            "password": None,
-            "server_url": None,
-            "check_file": None,
+            "gpgkeyid": "",
+            "password": "",
+            "server_url": "",
+            "check_file": "",
             "time_limit": 15,
             "email_id": "",
             "only_on_ip_change": False,
