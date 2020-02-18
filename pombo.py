@@ -53,8 +53,10 @@ from tempfile import gettempdir
 
 try:
     from configparser import Error, SafeConfigParser
+    from urllib.parse import urlsplit
 except ImportError:
     from ConfigParser import Error, SafeConfigParser  # type: ignore
+    from urlparse import urlsplit
 
 try:
     import requests
@@ -408,8 +410,7 @@ class Pombo(object):
             self.configuration = self.config()
 
         for distant in self.configuration["server_url"].split("|"):
-            txt_ = "Retrieving IP address from %s"
-            self.log.info(txt_, distant.split("/")[2])
+            self.log.info("Retrieving IP address from %s", urlsplit(distant).netloc)
             try:
                 current_ip = self.request_url(distant, "get", {"myip": "1"})
                 IP(current_ip)
@@ -443,10 +444,11 @@ class Pombo(object):
                 proxies["https"] = self.configuration["https_proxy"]
 
         ret = ""
-        ssl_cert_verif = url.split(":") == "https"
+        parts = urlsplit(url)
+        ssl_cert_verif = parts.scheme == "https"
         auth = None  # type: Optional[Tuple[str, str]]
 
-        if self.configuration["auth_server"] == url.split("/")[2]:
+        if self.configuration["auth_server"] == parts.netloc:
             auth = (self.configuration["auth_user"], self.configuration["auth_pswd"])
 
         try:
@@ -586,7 +588,7 @@ class Pombo(object):
         parameters = {"filename": filename, "filedata": filedata, "token": authtoken}
         for distant in self.configuration["server_url"].split("|"):
             txt = "Sending file (%s) to %s"
-            self.log.info(txt, sizeof_fmt(filepath), distant.split("/")[2])
+            self.log.info(txt, sizeof_fmt(filepath), urlsplit(distant).netloc)
             self.request_url(distant, "post", parameters)
 
     def snapshot(self, current_ip):
@@ -691,7 +693,7 @@ class Pombo(object):
             "verify": authtoken,
         }
         for distant in self.configuration["server_url"].split("|"):
-            self.log.info("Checking status on %s", distant.split("/")[2])
+            self.log.info("Checking status on %s", urlsplit(distant).netloc)
             if self.request_url(distant, "post", parameters) == "1":
                 self.log.info("<<!>> Stolen computer <<!>>")
                 return True
