@@ -271,7 +271,7 @@ class Pombo(object):
         if self.os_name == "Windows":
             user = self.runprocess(["echo", "%userNAME%"], useshell=True)
         else:
-            lines_ = self.runprocess(["who", "-s"], useshell=True).split("\n")
+            lines_ = self.runprocess(["who", "-s"], useshell=True).splitlines()
             for line in lines_:
                 if "tty" in line or "pts" in line or ":0" in line:
                     user = line.split(" ")[0]
@@ -300,7 +300,7 @@ class Pombo(object):
                 )
         elif self.os_name == "Mac":
             cmd = "/usr/sbin/system_profiler SPHardwareDataType | grep Model"
-            res = self.runprocess(cmd, useshell=True).strip().split("\n")
+            res = self.runprocess(cmd, useshell=True).strip().splitlines()
             manufacturer = "-".join(
                 [res[0].split(": ")[1].strip(), res[1].split(": ")[1].strip()]
             )
@@ -442,7 +442,7 @@ class Pombo(object):
                 proxies["http"] = self.configuration["http_proxy"]
                 proxies["https"] = self.configuration["https_proxy"]
 
-        ret = str("")
+        ret = ""
         ssl_cert_verif = url.split(":") == "https"
         auth = None  # type: Optional[Tuple[str, str]]
 
