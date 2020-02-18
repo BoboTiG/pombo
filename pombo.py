@@ -52,11 +52,11 @@ from locale import getdefaultlocale
 from tempfile import gettempdir
 
 try:
-    from configparser import Error, SafeConfigParser
+    from configparser import Error, ConfigParser
     from urllib.parse import urlsplit
 except ImportError:
-    from ConfigParser import Error, SafeConfigParser  # type: ignore
-    from urlparse import urlsplit
+    from ConfigParser import Error, ConfigParser  # type: ignore
+    from urlparse import urlsplit  # type: ignore
 
 try:
     import requests
@@ -213,7 +213,7 @@ class Pombo(object):
         }
         config = {}
         try:
-            conf = SafeConfigParser(defaults=defaults)  # type: ignore
+            conf = ConfigParser(defaults=defaults)  # type: ignore
             conf.read(self.conf)
         except Error as ex:
             self.log.error(ex)
@@ -236,9 +236,9 @@ class Pombo(object):
 
         # Secondary parameters (auth., email, commands, ...)
         config["email_id"] = conf.get("General", "email_id")
-        config["only_on_ip_change"] = conf.getboolean(
+        config["only_on_ip_change"] = conf.getboolean(  # type: ignore
             "General", "only_on_ip_change"
-        )  # type: ignore
+        )
         config["enable_log"] = conf.getboolean("General", "enable_log")  # type: ignore
         config["use_proxy"] = conf.getboolean("General", "use_proxy")  # type: ignore
         config["use_env"] = conf.getboolean("General", "use_env")  # type: ignore
