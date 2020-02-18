@@ -1,29 +1,34 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# coding: utf-8
+"""Pombo: convert the configuration file from version 0.0.10 to 0.0.11."""
+# pylint: disable=invalid-name
 
-# Pombo: convert the configuration file from version 0.0.10 to 0.0.11.
-
-
-from os import name
-from sys import exit
+import sys
 
 
-CONF = '/etc/pombo.conf'
-if name == 'nt':
-    CONF = 'c:\\pombo\\pombo.conf'
+def main():
+    """Entry point."""
 
-data = None
-with open(CONF, 'rb') as fh:
-    data = fh.read()
+    conf = "/etc/pombo.conf"
+    if sys.platform == "win32":
+        conf = "c:\\pombo\\pombo.conf"
 
-if not data:
-    print('! Impossible to read the configuration file.')
-    exit(1)
+    data = b""
+    with open(conf, "rb") as config_file:
+        data = config_file.read()
 
-data = data.replace('serverurl', 'server_url');
-data = data.replace('checkfile', 'check_file');
-data = data.replace('onlyonipchange', 'only_on_ip_change');
+    if not data:
+        print("! Impossible to read the configuration file.")
+        return 1
 
-with open(CONF, 'wb') as fh:
-    fh.write(data)
-    exit(0)
+    data = data.replace("serverurl", "server_url")
+    data = data.replace("checkfile", "check_file")
+    data = data.replace("onlyonipchange", "only_on_ip_change")
+
+    with open(conf, "wb") as config_file:
+        config_file.write(data)
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

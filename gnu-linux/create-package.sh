@@ -4,9 +4,9 @@
 #
 
 [ -z "$1" ] && custom="" || custom="-$1"
-files=" check-imports.py \
-        install.sh \
+files=" install.sh \
         uninstall.sh \
+        ../tools/check-imports.py \
         ../icon/pombo.svg \
         ../doc/* \
         ../pombo$custom.conf \
