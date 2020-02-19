@@ -63,4 +63,4 @@ Pombo sends only GnuPG encrypted zip files (for example ubuntu_20090824_155501.z
 - Enable auto-login: The thief will not be blocked by the login screen and will be less likely to wipe the harddisk.
 - Copy your private key in a safe place. If you keep it only in your computer and it gets stolen, you also loose your private key, and the capacity to decrypt tracing files.
 - Don't leave your private key on the computer to protect. Although the private key is itself encrypted and password-protected, it's better not let your private key in the hands of the thief.
-- To protect your private files from prying eyes, use TrueCrypt, safe and reliable.
+- To protect your private files from prying eyes, use [VeraCrypt](https://veracrypt.fr), safe and reliable.
