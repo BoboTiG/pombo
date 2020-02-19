@@ -1,6 +1,6 @@
 # Pombo
 
-Theft-recovery tracking opensource software.
+Theft-recovery tracking open-source software.
 
 ## What is it?
 

@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
 """
 Pombo
-Theft-recovery tracking opensource software
+Theft-recovery tracking open-source software
 https://github.com/BoboTiG/pombo
 http://sebsauvage.net/pombo
 
