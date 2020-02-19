@@ -30,10 +30,6 @@ subject to the following restrictions:
 
 from __future__ import print_function
 
-__version__ = "1.1.0"
-__author__ = "Mickaël Schoentgen"
-__date__ = "$18-Feb-2020 23:07:57$"
-
 # pylint: disable=useless-object-inheritance
 
 import hashlib
@@ -48,6 +44,7 @@ import time
 import zipfile
 from base64 import b64encode
 from datetime import datetime
+from distutils.version import StrictVersion
 from locale import getdefaultlocale
 from tempfile import gettempdir
 
@@ -78,6 +75,8 @@ try:
         from typing import Any, Dict, List, Optional, Tuple, Union
 except ImportError:
     pass
+
+__version__ = "1.1b1"
 
 
 # ----------------------------------------------------------------------
@@ -110,21 +109,18 @@ def sizeof_fmt(filename, suffix="B"):
 def hash_string(current_ip):
     # type: (str) -> str
     """ IP hash method - could be easily modifed. """
-
     return hashlib.sha256(current_ip.encode()).hexdigest()
 
 
 def printerr(string=""):
     # type: (str) -> None
     """ Print an error message to STDERR. """
-
     sys.stderr.write(string + "\n")
 
 
 def to_bool(value=""):
     # type: (str) -> bool
     """ Return a boolean of a given string. """
-
     return str(value).lower() in {"true", "on", "1", "yes", "oui"}
 
 
@@ -873,6 +869,7 @@ class PomboArg(object):
 
     def __init__(self, arg=None):
         # type: (Optional[str]) -> None
+
         # Backward-compatibility (renamed those methods in 1.1.0 to not conflict with builtins)
         if arg == "help":
             arg = "usage"
@@ -938,16 +935,18 @@ class PomboArg(object):
         # type: () -> None
         """ Check for a newer version. """
 
-        version = ""
         try:
             req = requests.get(Pombo.uplink, verify=True)
         except requests.exceptions.ConnectionError as ex:
             print(" ! Arf, check failed: {} !".format(ex))
             print(" . Please check later.")
             return
-        version = req.content.strip().decode()
-        if version > __version__:
-            if "a" in version or "b" in version:
+
+        version = StrictVersion(req.text.strip())
+        current_version = StrictVersion(__version__)
+
+        if version > current_version:
+            if version.prerelease:
                 print(" - Development version available: {}".format(version))
                 print(" . You should upgrade only for tests purpose!")
                 print(" - Check {}".format(Pombo.url))
@@ -955,7 +954,7 @@ class PomboArg(object):
             else:
                 print(" + Yep! New version is available: {}".format(version))
                 print(" - Check {} for upgrade.".format(Pombo.url))
-        elif version < __version__:
+        elif version < current_version:
             print("Ouhou! It seems that you are in advance on your time ;)")
         else:
             print("Version is up to date!")
