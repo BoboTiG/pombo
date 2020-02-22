@@ -1,13 +1,15 @@
 *.pyc
 *.~is
 archives/
+.coverage
 .fuse_hidden*
 pombo-*.conf
 gnu-linux/*.tar.gz
 mac/*.tar.gz
 windows/Output/
-.mypy_cache
-.tox
+htmlcov/
+.mypy_cache/
+.tox/
 
 # GUI
 gui/bin/
