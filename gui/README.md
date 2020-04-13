@@ -20,12 +20,12 @@ Screenshots
 
 Windows 7 :
 
-![screenshot Windows 7](https://raw.github.com/BoboTiG/pombo/develop/gui/screenshots/Windows%207.png "Preview on Windows 7")
+![screenshot Windows 7](https://raw.github.com/BoboTiG/pombo/master/gui/screenshots/Windows%207.png "Preview on Windows 7")
 
 Windows XP :
 
-![screenshot Windows XP](https://raw.github.com/BoboTiG/pombo/develop/gui/screenshots/Windows%20XP.png "Preview on Windows XP")
+![screenshot Windows XP](https://raw.github.com/BoboTiG/pombo/master/gui/screenshots/Windows%20XP.png "Preview on Windows XP")
 
 Debian GNU/Linux x64 :
 
-![screenshot Debian GNU/Linux x64](https://raw.github.com/BoboTiG/pombo/develop/gui/screenshots/Debian%20x64.png "Preview on Debian GNU/Linux x64")
+![screenshot Debian GNU/Linux x64](https://raw.github.com/BoboTiG/pombo/master/gui/screenshots/Debian%20x64.png "Preview on Debian GNU/Linux x64")
