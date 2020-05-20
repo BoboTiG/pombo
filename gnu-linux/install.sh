@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh
 #
 # Installation script for Pombo.
 #
@@ -11,15 +11,19 @@ fi
 inst_dir=/usr/local/bin
 [ -d ${inst_dir} ] || inst_dir=/usr/local/sbin
 
-src_dir=""
-[ -f pombo.py ] || src_dir="../"
+script=$(readlink -f "$0")
+# Absolute path install.sh script is in
+src_dir=$(dirname "$script")
+# Absolute path of Pombo main dir (without trailing /)
+src_dir=$(dirname "$src_dir")
+
 
 echo "\nInstalling (verbose) ..."
 [ -f /etc/pombo.conf ] && mv -fv /etc/pombo.conf /etc/pombo.conf.$(date '+%s')
-install -v ${src_dir}pombo.conf /etc
+install -v ${src_dir}/pombo.conf /etc
 echo "« chmod 600 /etc/pombo.conf »"
 chmod 600 /etc/pombo.conf
-install -v ${src_dir}pombo.py ${inst_dir}/pombo
+install -v ${src_dir}/pombo.py ${inst_dir}/pombo
 echo "« chmod +x ${inst_dir}/pombo »"
 chmod +x ${inst_dir}/pombo
 
@@ -43,12 +47,13 @@ echo "Done."
 
 echo "\nChecking dependancies ..."
 ok=1
-for package in python gpg ifconfig iwlist traceroute streamer; do
+
+for package in python gpg ifconfig iwlist traceroute streamer; do    
     test=$(which ${package})
-    [ $? != 0 ] && echo " ! ${package} needed but not installed." && ok=0
+    [ $? != 0 ] && echo " ! ${test}.... ${package} needed but not installed." && ok=0
 done
-python check-imports.py
-[ $? != 0 ] && ok=0
+echo "Shell script uses Python $(python --version)"
+python ${src_dir}/tools/check-imports.py
 case ${ok} in
     1) echo "Done." ;;
     *) echo "Please install necessary tools before continuing." ;;
