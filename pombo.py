@@ -699,9 +699,9 @@ class Pombo(object):
                     "-r",
                     self.configuration["gpgkeyid"],
                     "-o",
-                    output,
-                    "-e",
                     output + ".gpg",
+                    "-e",
+                    output,
                 ]
             )
 
