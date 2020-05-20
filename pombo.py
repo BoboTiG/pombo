@@ -629,8 +629,8 @@ class Pombo(object):
 
         # Send to the webserver (HTTP POST).
         parameters = {"filename": filename, "filedata": filedata, "token": authtoken}
+        txt = "Sending file (%s) to %s"
         for distant in self.configuration["server_url"].split("|"):
-            txt = "Sending file (%s) to %s"
             self.log.info(txt, sizeof_fmt(len(filedata)), urlsplit(distant).netloc)
             self.request_url(distant, "post", parameters)
 
@@ -842,13 +842,15 @@ Date/time: {7} (local time) {1}
             )
             cmd = self.configuration["camshot"].replace("<filepath>", filepath)
             self.runprocess(cmd, useshell=True)
-            if os.path.isfile(filepath):
-                if self.configuration["camshot_filetype"] == "ppm":
-                    full_path_ = os.path.join(temp, filename)
-                    new_path_ = "{}_webcam.jpg".format(full_path_)
-                    self.runprocess(["/usr/bin/convert", filepath, new_path_])
-                    os.unlink(filepath)
-                    filepath = new_path_
+            if (
+                os.path.isfile(filepath)
+                and self.configuration["camshot_filetype"] == "ppm"
+            ):
+                full_path_ = os.path.join(temp, filename)
+                new_path_ = "{}_webcam.jpg".format(full_path_)
+                self.runprocess(["/usr/bin/convert", filepath, new_path_])
+                os.unlink(filepath)
+                filepath = new_path_
 
         if not os.path.isfile(filepath):
             return None
