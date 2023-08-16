@@ -283,8 +283,8 @@ class Pombo(object):
             for line in lines:
                 if "tty" in line or "pts" in line or ":0" in line:
                     user = line.split(" ")[0].strip()
-                    if ":0" in line:
-                        break
+                if ":0" in line:
+                    break
 
         self.log.debug("Username is %r", user)
         return user
@@ -317,7 +317,7 @@ class Pombo(object):
             # Try first the system data
             res = [
                 self.runprocess(
-                    "/usr/sbin/dmidecode --string " + info, useshell=True
+                    f"/usr/sbin/dmidecode --string {info}", useshell=True
                 ).strip()
                 for info in (
                     "system-manufacturer",
@@ -325,11 +325,11 @@ class Pombo(object):
                     "system-version",
                 )
             ]
-            if set(res) == set([""]):
+            if set(res) == {""}:
                 # Fallback on the baseboard
                 res = [
                     self.runprocess(
-                        "/usr/sbin/dmidecode --string " + info, useshell=True
+                        f"/usr/sbin/dmidecode --string {info}", useshell=True
                     ).strip()
                     for info in (
                         "baseboard-manufacturer",
@@ -436,8 +436,7 @@ class Pombo(object):
                 is_stolen: True if computer is marked as stolen
         """
 
-        is_stolen = self.stolen()
-        if is_stolen:
+        if is_stolen := self.stolen():
             return True, True
 
         if not self.configuration["only_on_ip_change"]:
@@ -624,13 +623,13 @@ class Pombo(object):
 
         filedata = b64encode(data)
         key = str(self.configuration["password"]).encode()
-        msg = str(str(filedata.decode()) + "***" + filename).encode()
+        msg = str(f"{str(filedata.decode())}***{filename}").encode()
         authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
 
         # Send to the webserver (HTTP POST).
         parameters = {"filename": filename, "filedata": filedata, "token": authtoken}
+        txt = "Sending file (%s) to %s"
         for distant in self.configuration["server_url"].split("|"):
-            txt = "Sending file (%s) to %s"
             self.log.info(txt, sizeof_fmt(len(filedata)), urlsplit(distant).netloc)
             self.request_url(distant, "post", parameters)
 
@@ -652,7 +651,7 @@ class Pombo(object):
         # Create the system report (IP, date/hour...)
         self.log.info("Filename: %s", report_name)
         self.log.info("Collecting system info")
-        filepath = "{}.txt".format(os.path.join(temp, report_name))
+        filepath = f"{os.path.join(temp, report_name)}.txt"
         with open(filepath, "w") as fileh:
             fileh.write(self.system_report(current_ip))
         filestozip = [filepath]
@@ -660,9 +659,7 @@ class Pombo(object):
         # Take screenshot(s)
         filestozip.extend(self.screenshot(report_name))
 
-        # Take a webcam snapshot
-        webcam = self.webcamshot(report_name)
-        if webcam:
+        if webcam := self.webcamshot(report_name):
             filestozip.append(webcam)
 
         # Zip files:
@@ -699,7 +696,7 @@ class Pombo(object):
                     "-r",
                     self.configuration["gpgkeyid"],
                     "-o",
-                    output + ".gpg",
+                    f"{output}.gpg",
                     "-e",
                     output,
                 ]
@@ -731,7 +728,7 @@ class Pombo(object):
             self.stolen_last_update = time.time()
             salt = "just check if I am a stolen one"
             key = str(self.configuration["password"]).encode()
-            msg = str(salt + "***" + self.configuration["check_file"]).encode()
+            msg = str(f"{salt}***" + self.configuration["check_file"]).encode()
             authtoken = hmac.new(key, msg, hashlib.sha1).hexdigest()
             parameters = {
                 "filename": self.configuration["check_file"],
@@ -791,7 +788,7 @@ Date/time: {7} (local time) {1}
         ]
         for key, info in todo:
             self.log.debug("System report: %s()", key)
-            report += "{}:\n".format(info)
+            report += f"{info}:\n"
             if not self.configuration[key]:
                 report += "Disabled."
             else:
@@ -818,7 +815,7 @@ Date/time: {7} (local time) {1}
         temp = gettempdir()
         self.log.info("Taking webcamshot")
         if self.is_windows():
-            filepath = "{}_webcam.jpg".format(os.path.join(temp, filename))
+            filepath = f"{os.path.join(temp, filename)}_webcam.jpg"
             try:
                 cam = Device(devnum=0)  # type: ignore
                 if not cam:
@@ -837,15 +834,13 @@ Date/time: {7} (local time) {1}
                 self.log.error(ex)
                 return None
         else:
-            filepath = "{}_webcam.{}".format(
-                os.path.join(temp, filename), self.configuration["camshot_filetype"]
-            )
+            filepath = f'{os.path.join(temp, filename)}_webcam.{self.configuration["camshot_filetype"]}'
             cmd = self.configuration["camshot"].replace("<filepath>", filepath)
             self.runprocess(cmd, useshell=True)
             if os.path.isfile(filepath):
                 if self.configuration["camshot_filetype"] == "ppm":
                     full_path_ = os.path.join(temp, filename)
-                    new_path_ = "{}_webcam.jpg".format(full_path_)
+                    new_path_ = f"{full_path_}_webcam.jpg"
                     self.runprocess(["/usr/bin/convert", filepath, new_path_])
                     os.unlink(filepath)
                     filepath = new_path_
@@ -880,7 +875,7 @@ Date/time: {7} (local time) {1}
             if self.configuration["only_on_ip_change"]:
                 complement = "on ip change"
             else:
-                complement = "every {} minutes".format(self.configuration["time_limit"])
+                complement = f'every {self.configuration["time_limit"]} minutes'
             self.log.info(
                 (
                     "==> In real scenario, Pombo will send a report"
@@ -911,9 +906,7 @@ Date/time: {7} (local time) {1}
         current_ip = self.public_ip()
         report_needed, is_stolen = self.need_report(current_ip)
         if current_ip and report_needed:
-            wait = 60 * self.configuration["time_limit"] // 3
-            if is_stolen:
-                wait = 60
+            wait = 60 if is_stolen else 60 * self.configuration["time_limit"] // 3
             for i in range(1, 4):
                 self.log.info("* Attempt %d/3 *", i)
                 start = time.time()
@@ -936,11 +929,11 @@ class PomboArg(object):
         elif arg == "list":
             arg = "list_ips"
 
-        print("Pombo {}".format(__version__))
+        print(f"Pombo {__version__}")
         try:
             return getattr(self, arg)()
         except AttributeError:
-            printerr('Unknown argument "{}" - try "help".'.format(arg))
+            printerr(f'Unknown argument "{arg}" - try "help".')
 
         return 1
 
@@ -964,7 +957,7 @@ class PomboArg(object):
                     known = True
 
         if not known:
-            print("Adding IP {} to {}".format(curr_ip, pombo.ip_file))
+            print(f"Adding IP {curr_ip} to {pombo.ip_file}")
             with open(pombo.ip_file, "a+") as fileh:
                 fileh.write(hash_string(curr_ip) + "\n")
 
@@ -976,7 +969,7 @@ class PomboArg(object):
         """ Print help message. """
 
         print("Options ---")
-        print("   add      add the current IP to {}".format(Pombo.ip_file))
+        print(f"   add      add the current IP to {Pombo.ip_file}")
         print("   check    launch Pombo in verbose mode")
         print("   help     show this message")
         print("   list     list known IP")
@@ -993,9 +986,9 @@ class PomboArg(object):
             print("There is no known IP address.")
         else:
             with open(Pombo.ip_file) as fileh:
-                print("IP hashes in {}:".format(Pombo.ip_file))
-                for ip_h in fileh.readlines():
-                    print("   {}...{}".format(ip_h[:20], ip_h.strip()[-20:]))
+                print(f"IP hashes in {Pombo.ip_file}:")
+                for ip_h in fileh:
+                    print(f"   {ip_h[:20]}...{ip_h.strip()[-20:]}")
 
         return 0
 
@@ -1007,7 +1000,7 @@ class PomboArg(object):
         try:
             req = requests.get(UPLINK, verify=True)
         except requests.exceptions.RequestException as ex:
-            print(" ! Arf, check failed: {}!".format(ex))
+            print(f" ! Arf, check failed: {ex}!")
             print(" . Please check later.")
             return 1
 
@@ -1016,13 +1009,13 @@ class PomboArg(object):
 
         if version > current_version:
             if version.prerelease:
-                print(" - Development version available: {}".format(version))
+                print(f" - Development version available: {version}")
                 print(" . You should upgrade only for tests purpose!")
-                print(" - Check {}".format(URL))
+                print(f" - Check {URL}")
                 print("   and report issues/ideas on GitHub")
             else:
-                print(" + Yep! New version is available: {}".format(version))
-                print(" - Check {} for upgrade.".format(URL))
+                print(f" + Yep! New version is available: {version}")
+                print(f" - Check {URL} for upgrade.")
         elif version < current_version:
             print("Ouhou! It seems that you are in advance on your time ;)")
         else:
@@ -1036,13 +1029,13 @@ class PomboArg(object):
         """ Print Pombo and modules versions. """
 
         ver = sys.version_info
-        print("I am using Python {}.{}.{}".format(ver.major, ver.minor, ver.micro))
-        print("            & MSS {}".format(mss.__version__))
-        print("            & IPy {}".format(IPy.__version__))
-        print("        & request {}".format(requests.__version__))
+        print(f"I am using Python {ver.major}.{ver.minor}.{ver.micro}")
+        print(f"            & MSS {mss.__version__}")
+        print(f"            & IPy {IPy.__version__}")
+        print(f"        & request {requests.__version__}")
         if WINDOWS:
-            print("   & VideoCapture {}".format(VC_VERSION))
-            print("            & PIL {}".format(Image.VERSION))  # type: ignore
+            print(f"   & VideoCapture {VC_VERSION}")
+            print(f"            & PIL {Image.VERSION}")
 
         return 0
 
