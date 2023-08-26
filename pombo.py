@@ -601,7 +601,7 @@ class Pombo(object):
             return files
 
         temp = gettempdir()
-        filepath = "{}_screenshot-%d.png".format(os.path.join(temp, filename))
+        filepath = f"{os.path.join(temp, filename)}_screenshot-{{mon}}.png"
 
         kwargs = {}
         if LINUX and "DISPLAY" in os.environ:
