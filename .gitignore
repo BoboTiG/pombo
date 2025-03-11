@@ -10,6 +10,8 @@ windows/Output/
 htmlcov/
 .mypy_cache/
 .tox/
+index.php
+pombo.conf
 
 # GUI
 gui/bin/

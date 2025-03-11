@@ -20,11 +20,6 @@
      *     require '../pombo.php';
      * ?>
      */
-    if ( !isset($PASSWORD) )
-        $PASSWORD  = '<The same value as in pombo.conf.>';
-    if ( !isset($CHECKFILE) )
-        $CHECKFILE = '<The same value as in pombo.conf.>';
-
     if ( !function_exists('hash_hmac') ) {
         //Calculate HMAC-SHA1 according to RFC2104
         // http://www.ietf.org/rfc/rfc2104.txt
