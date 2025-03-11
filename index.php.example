@@ -1,0 +1,4 @@
+<?php
+    $PASSWORD  = 'mysecret';  // The same value as in pombo.conf
+    $CHECKFILE = '.stolen';  // The same value as in pombo.conf
+    require 'pombo.php';
