@@ -130,7 +130,7 @@ screenshot=yes
 
 ; Take webcam shot?
 ; <filepath> will be replaced by a filename, do not customize (required).
-; [W] yes or no
+; [W] yes or (blank to disable)
 ; [L] /usr/bin/streamer -q -t 1 -r 2 -o  <filepath>
 ; [L] /usr/bin/streamer -q -t 1 -r 2 -j 100 -s 640x480 -o <filepath>
 ; [L] /usr/bin/streamer -q -w 3 -o <filepath>

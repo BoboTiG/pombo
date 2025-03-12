@@ -10,8 +10,14 @@ windows/Output/
 htmlcov/
 .mypy_cache/
 .tox/
+.venv
 index.php
 pombo.conf
+.vscode
+
+# Pombo Portable (IP file & log file)
+pombo
+pombo.log
 
 # GUI
 gui/bin/

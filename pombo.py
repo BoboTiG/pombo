@@ -71,7 +71,6 @@ except ImportError:  # pragma: no cover
 
 if sys.platform == "win32":  # pragma: no cover
     from PIL import Image
-    from VideoCapture import Device
 
 __version__ = "1.1b1"
 
@@ -299,11 +298,11 @@ class Pombo(object):
             if len(res) < 3:
                 manufacturer = "Unknown"
             else:
-                manufacturer = "-".join(
+                manufacturer = " - ".join(
                     [
-                        res[1].split("=")[1].strip(),
-                        res[0].split("=")[1].strip(),
-                        res[2].split("=")[1].strip(),
+                        res[1].split("=")[1].strip() if '=' in res[1] else res[1],
+                        res[0].split("=")[1].strip() if '=' in res[0] else res[0],
+                        res[2].split("=")[1].strip() if '=' in res[2] else res[2],
                     ]
                 )
         elif self.is_mac():
@@ -653,7 +652,7 @@ class Pombo(object):
         self.log.info("Filename: %s", report_name)
         self.log.info("Collecting system info")
         filepath = "{}.txt".format(os.path.join(temp, report_name))
-        with open(filepath, "w") as fileh:
+        with open(filepath, "w", encoding='utf8') as fileh:
             fileh.write(self.system_report(current_ip))
         filestozip = [filepath]
 
@@ -815,6 +814,9 @@ Date/time: {7} (local time) {1}
             self.log.info("Skipping webcamshot.")
             return None
 
+        if sys.platform == "win32":  # pragma: no cover
+            from VideoCapture import Device
+
         temp = gettempdir()
         self.log.info("Taking webcamshot")
         if self.is_windows():
@@ -891,6 +893,7 @@ Date/time: {7} (local time) {1}
             )
             return
 
+        runtime = 0
         if self.is_windows():
             # Cron job like for Windows :s
             while True:
