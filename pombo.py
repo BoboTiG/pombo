@@ -45,7 +45,7 @@ import time
 import zipfile
 from base64 import b64encode
 from datetime import datetime
-from distutils.version import StrictVersion
+from packaging.version import Version
 from locale import getdefaultlocale
 from tempfile import gettempdir
 
@@ -1011,8 +1011,8 @@ class PomboArg(object):
             print(" . Please check later.")
             return 1
 
-        version = StrictVersion(req.text.strip())
-        current_version = StrictVersion(__version__)
+        version = Version(req.text.strip())
+        current_version = Version(__version__)
 
         if version > current_version:
             if version.prerelease:
