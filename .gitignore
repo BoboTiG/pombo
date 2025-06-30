@@ -7,9 +7,22 @@ pombo-*.conf
 gnu-linux/*.tar.gz
 mac/*.tar.gz
 windows/Output/
+output
+/dist
+/build
+/*.spec
 htmlcov/
 .mypy_cache/
 .tox/
+.venv
+index.php
+pombo.conf
+.vscode
+auto_py_to_exe*json
+
+# Pombo Portable (IP file & log file)
+pombo
+pombo.log
 
 # GUI
 gui/bin/

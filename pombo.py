@@ -42,6 +42,7 @@ import subprocess
 from socket import gaierror
 import sys
 import time
+import urllib3
 import zipfile
 from base64 import b64encode
 from datetime import datetime
@@ -71,7 +72,6 @@ except ImportError:  # pragma: no cover
 
 if sys.platform == "win32":  # pragma: no cover
     from PIL import Image
-    from VideoCapture import Device
 
 __version__ = "1.1b1"
 
@@ -81,7 +81,7 @@ WINDOWS = sys.platform == "win32"
 CURRENT_OS = {"Linux": "Linux", "Darwin": "Mac", "Windows": "Windows"}[
     platform.system()
 ]
-ENCODING = sys.stdin.encoding or getdefaultlocale()[1] or "utf-8"
+ENCODING = (sys.stdin.encoding if sys.stdin else None) or getdefaultlocale()[1] or "utf-8"
 VC_VERSION = "0.9.5"
 URL = "https://github.com/BoboTiG/pombo"
 UPLINK = "https://raw.github.com/BoboTiG/pombo/master/VERSION"
@@ -93,6 +93,7 @@ DEFAULTS = {
     "time_limit": 15,
     "email_id": "",
     "only_on_ip_change": False,
+    "always_report": False,
     "enable_log": False,
     "use_proxy": False,
     "use_env": False,
@@ -106,7 +107,7 @@ DEFAULTS = {
     "wifi_access_points": "",
     "traceroute": "",
     "network_trafic": "",
-    "screenshot": True,
+    "screenshot": "yes",
     "camshot": "",
     "camshot_filetype": "",
 }
@@ -148,7 +149,10 @@ def hash_string(current_ip):
 def printerr(string=""):
     # type: (str) -> None
     """ Print an error message to STDERR. """
-    sys.stderr.write(string + "\n")
+    try:
+        sys.stderr.write(string + "\n")
+    except:
+        pass
 
 
 def to_bool(value=""):
@@ -165,9 +169,9 @@ class Pombo(object):
 
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
 
-    conf = "c:\\pombo\\pombo.conf" if WINDOWS else "/etc/pombo.conf"
-    ip_file = "c:\\pombo\\pombo" if WINDOWS else "/var/local/pombo"
-    log_file = "c:\\pombo\\pombo.log" if WINDOWS else "/var/log/pombo.log"
+    conf = "C:\\Users\\Public\\pombo\\pombo.conf" if WINDOWS else "/etc/pombo.conf"
+    ip_file = "C:\\Users\\Public\\pombo\\pombo" if WINDOWS else "/var/local/pombo"
+    log_file = "C:\\Users\\Public\\pombo\\pombo.log" if WINDOWS else "/var/log/pombo.log"
 
     def __init__(self, testing=False):
         # type: (bool) -> None
@@ -244,6 +248,7 @@ class Pombo(object):
         config["only_on_ip_change"] = conf.getboolean(  # type: ignore
             "General", "only_on_ip_change"
         )
+        config["always_report"] = conf.getboolean("General", "always_report")  # type: ignore
         config["enable_log"] = conf.getboolean("General", "enable_log")  # type: ignore
         config["use_proxy"] = conf.getboolean("General", "use_proxy")  # type: ignore
         config["use_env"] = conf.getboolean("General", "use_env")  # type: ignore
@@ -257,7 +262,7 @@ class Pombo(object):
         config["wifi_access_points"] = conf.get("Commands", "wifi_access_points")
         config["traceroute"] = conf.get("Commands", "traceroute")
         config["network_trafic"] = conf.get("Commands", "network_trafic")
-        config["screenshot"] = conf.getboolean("Commands", "screenshot")  # type: ignore
+        config["screenshot"] = conf.get("Commands", "screenshot")
         config["camshot"] = conf.get("Commands", "camshot")
         config["camshot_filetype"] = conf.get("Commands", "camshot_filetype")
 
@@ -299,11 +304,11 @@ class Pombo(object):
             if len(res) < 3:
                 manufacturer = "Unknown"
             else:
-                manufacturer = "-".join(
+                manufacturer = " - ".join(
                     [
-                        res[1].split("=")[1].strip(),
-                        res[0].split("=")[1].strip(),
-                        res[2].split("=")[1].strip(),
+                        res[1].split("=")[1].strip() if '=' in res[1] else res[1],
+                        res[0].split("=")[1].strip() if '=' in res[0] else res[0],
+                        res[2].split("=")[1].strip() if '=' in res[2] else res[2],
                     ]
                 )
         elif self.is_mac():
@@ -368,8 +373,8 @@ class Pombo(object):
                 continue
 
             if self.is_windows():
-                parts = res.split("=")
-                if not parts[0].startswith("ERR") and parts[1] != "0":
+                parts = serial = res.split("=")
+                if len(parts) >= 2 and not parts[0].startswith("ERR") and parts[1] != "0":
                     serial = parts[1]
                     break
             elif res != "System Serial Number":
@@ -440,6 +445,9 @@ class Pombo(object):
         if is_stolen:
             return True, True
 
+        if self.configuration["always_report"]:
+            return True, False
+
         if not self.configuration["only_on_ip_change"]:
             self.log.info("Skipping check based on IP change.")
             return True, False
@@ -494,7 +502,7 @@ class Pombo(object):
 
         ret = ""
         parts = urlsplit(url)
-        ssl_cert_verif = parts.scheme == "https"
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # ssl_cert_verif = parts.scheme == "https"
         auth = None  # type: Optional[Tuple[str, str]]
 
         if self.configuration["auth_server"] == parts.netloc:
@@ -506,7 +514,7 @@ class Pombo(object):
                     url,
                     params=params,
                     proxies=proxies,
-                    verify=ssl_cert_verif,
+                    verify=False,  # ssl_cert_verif,
                     auth=auth,
                     timeout=30,
                 )
@@ -515,7 +523,7 @@ class Pombo(object):
                     url,
                     data=params,
                     proxies=proxies,
-                    verify=ssl_cert_verif,
+                    verify=False,  # ssl_cert_verif,
                     auth=auth,
                     timeout=30,
                 )
@@ -555,6 +563,7 @@ class Pombo(object):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 shell=useshell,
+                creationflags=subprocess.CREATE_NO_WINDOW if WINDOWS else 0,  # hides new terminal window on Windows platform @see https://stackoverflow.com/questions/74048217/hide-popen-in-exe-mode
             )
             sout, serr = myprocess.communicate()
             myprocess.wait()
@@ -584,15 +593,19 @@ class Pombo(object):
 
         return ""
 
-    def screenshot(self, filename):
-        # type: (str) -> List[str]
+    def screenshot(self, filename, is_stolen=False):
+        # type: (str, bool) -> List[str]
         """ Takes a screenshot and returns the path to the saved image
             (in TMP). None if could not take the screenshot.
         """
         files = []  # type: List[str]
 
-        if not self.configuration["screenshot"]:
+        if not self.configuration["screenshot"] or self.configuration["screenshot"] == 'no':
             self.log.info("Skipping screenshot.")
+            return files
+
+        if self.configuration["screenshot"] == 'stolen' and not is_stolen:
+            self.log.info("Skipping screenshot, computer not stolen.")
             return files
 
         self.log.info("Taking screenshot")
@@ -634,8 +647,8 @@ class Pombo(object):
             self.log.info(txt, sizeof_fmt(len(filedata)), urlsplit(distant).netloc)
             self.request_url(distant, "post", parameters)
 
-    def snapshot(self, current_ip):
-        # type: (str) -> None
+    def snapshot(self, current_ip, is_stolen=False):
+        # type: (str, bool) -> None
         """ Make a global snapshot of the system (ip, screenshot, webcam...)
             and sends it to the internet.
             If not internet connexion is available, will exit.
@@ -653,15 +666,15 @@ class Pombo(object):
         self.log.info("Filename: %s", report_name)
         self.log.info("Collecting system info")
         filepath = "{}.txt".format(os.path.join(temp, report_name))
-        with open(filepath, "w") as fileh:
+        with open(filepath, "w", encoding='utf8') as fileh:
             fileh.write(self.system_report(current_ip))
         filestozip = [filepath]
 
         # Take screenshot(s)
-        filestozip.extend(self.screenshot(report_name))
+        filestozip.extend(self.screenshot(report_name, is_stolen))
 
         # Take a webcam snapshot
-        webcam = self.webcamshot(report_name)
+        webcam = self.webcamshot(report_name, is_stolen)
         if webcam:
             filestozip.append(webcam)
 
@@ -805,15 +818,22 @@ Date/time: {7} (local time) {1}
             report = report.replace("\r\n", "\n")
         return report
 
-    def webcamshot(self, filename):
-        # type: (str) -> Union[str, None]
+    def webcamshot(self, filename, is_stolen=False):
+        # type: (str, bool) -> Union[str, None]
         """ Takes a snapshot with the webcam and returns the path to the
             saved image (in TMP). None if could not take the snapshot.
         """
 
-        if not self.configuration["camshot"]:
+        if not self.configuration["camshot"] or self.configuration["camshot"] == 'no':
             self.log.info("Skipping webcamshot.")
             return None
+
+        if self.configuration["camshot"] == 'stolen' and not is_stolen:
+            self.log.info("Skipping webcamshot, computer not stolen.")
+            return None
+
+        if sys.platform == "win32":  # pragma: no cover
+            from VideoCapture import Device
 
         temp = gettempdir()
         self.log.info("Taking webcamshot")
@@ -877,20 +897,23 @@ Date/time: {7} (local time) {1}
 
             self.snapshot(current_ip)
             wait_stolen = self.configuration["time_limit"] // 3
-            if self.configuration["only_on_ip_change"]:
-                complement = "on ip change"
+            if self.configuration["always_report"]:
+                complement = "every {} minutes otherwise".format(self.configuration["time_limit"])
+            elif self.configuration["only_on_ip_change"]:
+                complement = "on ip change otherwise"
             else:
-                complement = "every {} minutes".format(self.configuration["time_limit"])
+                complement = "otherwise no report will be sent"
             self.log.info(
                 (
                     "==> In real scenario, Pombo will send a report"
-                    " every %d minutes if stolen, %s otherwise."
+                    " every %d minutes if stolen, %s."
                 ),
                 wait_stolen,
                 complement,
             )
             return
 
+        runtime = 0
         if self.is_windows():
             # Cron job like for Windows :s
             while True:
@@ -900,7 +923,7 @@ Date/time: {7} (local time) {1}
                 report_needed, is_stolen = self.need_report(current_ip)
                 if current_ip and report_needed:
                     start = time.time()
-                    self.snapshot(current_ip)
+                    self.snapshot(current_ip, is_stolen)
                     runtime = time.time() - start
                 if is_stolen:
                     time.sleep(wait_stolen - runtime)
@@ -917,7 +940,7 @@ Date/time: {7} (local time) {1}
             for i in range(1, 4):
                 self.log.info("* Attempt %d/3 *", i)
                 start = time.time()
-                self.snapshot(current_ip)
+                self.snapshot(current_ip, is_stolen)
                 runtime = time.time() - start
                 if i < 3:
                     time.sleep(wait - runtime)
